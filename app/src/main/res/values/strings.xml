@@ -1,0 +1,108 @@
+<resources>
+    <string name="app_name">GameBoxd</string>
+
+    <!-- Navigation & Titles -->
+    <string name="nav_explore">Explore</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_stats">Stats</string>
+    <string name="title_explore">Explore Games</string>
+    <string name="subtitle_explore">Find your favorite and discover new games</string>
+    <string name="title_library">Game Library</string>
+    <string name="subtitle_library">Explore your library</string>
+    <string name="title_stats">Stats Overview</string>
+    <string name="subtitle_stats">Your gaming journey overview</string>
+
+    <!-- Status Tabs -->
+    <string name="status_completed">Completed</string>
+    <string name="status_backlog">Backlog</string>
+    <string name="status_dropped">Dropped</string>
+    <string name="status_not_saved">Not Saved</string>
+
+    <!-- Search & Filter -->
+    <string name="search_placeholder_explore">Search games…</string>
+    <string name="search_placeholder_library">Search your library…</string>
+    <string name="sort_by">Sort By: %1$s</string>
+    <string name="results_count_one">%1$d game</string>
+    <string name="results_count_many">%1$d games</string>
+    <string name="results_for">Results for </string>
+    <string name="all_games">All games</string>
+    <string name="filter_all_years">All Years</string>
+
+    <!-- Sort Options -->
+    <string name="sort_top_rated">Top Rated</string>
+    <string name="sort_newest_first">Newest First</string>
+    <string name="sort_oldest_first">Oldest First</string>
+    <string name="sort_name_asc">Name (A-Z)</string>
+    <string name="sort_name_desc">Name (Z-A)</string>
+    <string name="sort_recently_updated">Recently Updated</string>
+    <string name="sort_highest_rating">Highest Rating</string>
+    <string name="sort_platinum_acquired">Platinum Acquired</string>
+    <string name="sort_most_played">Most Played</string>
+
+    <!-- Rating Dialog -->
+    <string name="your_rating">Your Rating:</string>
+    <string name="tap_stars_to_rate">Tap stars to rate</string>
+    <string name="platinum_trophy">Platinum Trophy</string>
+    <string name="hours_played">Hours Played</string>
+    <string name="write_review_label">Write a review</string>
+    <string name="btn_add_to_library">Save To Library</string>
+    <string name="btn_update_entry">Update Review</string>
+    <string name="btn_remove_from_library">Remove from Library</string>
+    <string name="share_review_btn">Share Review Card</string>
+    <string name="share_chooser_title">Share Review via GameBoxd</string>
+    <string name="remove_game_title">Remove Game</string>
+    <string name="remove_game_confirm">Are you sure you want to remove \'%1$s\' from your library?</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_remove">Remove</string>
+    <string name="toast_saved">Review successfully saved</string>
+    <string name="toast_updated">Review successfully updated</string>
+    <string name="toast_removed">Removed from library</string>
+    <string name="review_rating_required_hint">Select a rating star above to enable review</string>
+    <string name="release_date_format">Release Date: %1$s</string>
+    <string name="release_date_na">N/A</string>
+    <string name="close_content_description">Close</string>
+
+    <!-- Stats Screen -->
+    <string name="stat_in_library">🎮 In Library</string>
+    <string name="stat_avg_rating">⭐ Avg Rating</string>
+    <string name="stat_playtime">⏳ Playtime</string>
+    <string name="stat_platinums">🏆 Platinums</string>
+    <string name="library_details_title">Game Library Details</string>
+    <string name="stat_total_games">Total Games</string>
+    <string name="stat_completion_rate">Completion Rate</string>
+    <string name="rating_breakdown_title">Rating Breakdown</string>
+    <string name="stat_overall">Overall</string>
+    <string name="stat_completed_games">Completed</string>
+    <string name="stat_dropped_games">Dropped</string>
+    <string name="highlights_title">Highlights &amp; Insights</string>
+    <string name="highlight_top_rated">Top rated</string>
+    <string name="highlight_most_played">Most played</string>
+    <string name="highlight_avg_completion_time">Avg completion time</string>
+    <string name="highlight_platinum_rate">Platinum Trophy rate</string>
+    <string name="backup_restore_btn">Backup &amp; Restore Data</string>
+    <string name="backup_dialog_title">Data Backup &amp; Restore</string>
+    <string name="btn_copy_json">Copy Library JSON to Clipboard</string>
+    <string name="btn_restore_json">Restore from JSON</string>
+    <string name="paste_json_label">Paste JSON to Restore Data</string>
+    <string name="toast_json_copied">Library JSON copied to clipboard!</string>
+    <string name="toast_data_restored">Data restored successfully!</string>
+    <string name="toast_invalid_json">Invalid JSON format!</string>
+    <string name="btn_close">Close</string>
+    <string name="rated_count_label">%1$d rated</string>
+    <string name="per_completed_game">Per completed game</string>
+    <string name="of_completed_games">Of completed games</string>
+
+    <!-- Empty States & Errors -->
+    <string name="no_games_found">No PlayStation games found.</string>
+    <string name="no_games_found_for">No games found for \'%1$s\'. Check spelling or try another title!</string>
+    <string name="no_games_in_status">No games in \'%1$s\' yet.\nExplore games and add them!</string>
+    <string name="no_games_matching_in_status">No games matching \'%1$s\'\nin \'%2$s\'.</string>
+    <string name="load_more_games">Load More Games</string>
+    <string name="retry_connection">Retry Connection</string>
+    <string name="toggle_theme">Toggle Light/Dark Theme</string>
+
+    <!-- Game Card -->
+    <string name="rawg_rating_format">RAWG Rating: %1$.1f/5</string>
+    <string name="hours_played_card_format">Hours played: %1$dh</string>
+    <string name="rating_stars_content_description">Star %1$d</string>
+</resources>

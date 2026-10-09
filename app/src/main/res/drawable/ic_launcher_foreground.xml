@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Controller Body -->
+    <path
+        android:fillColor="#1B263B"
+        android:strokeColor="#0070D1"
+        android:strokeWidth="1.5"
+        android:pathData="M34,42 C26,42 22,48 20,62 C18.5,72 23,80 28,80 C32,80 36,73 38,67 L44,67 C46,73 50,80 54,80 L54,80 C58,80 62,73 64,67 L70,67 C72,73 76,80 80,80 C85,80 89.5,72 88,62 C86,48 82,42 74,42 Z" />
+
+    <!-- Controller Center Accent Line -->
+    <path
+        android:fillColor="#0070D1"
+        android:pathData="M48,46 L60,46 L58,50 L50,50 Z" />
+
+    <!-- D-Pad (Left) -->
+    <path
+        android:fillColor="#E0E6ED"
+        android:pathData="M29,56 h3 v-3 h3 v3 h3 v3 h-3 v3 h-3 v-3 h-3 z" />
+
+    <!-- Action Buttons (Right) -->
+    <!-- Triangle / Top -->
+    <path android:fillColor="#0070D1" android:pathData="M79,53 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" />
+    <!-- Square / Left -->
+    <path android:fillColor="#E0E6ED" android:pathData="M75,57 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" />
+    <!-- Circle / Right -->
+    <path android:fillColor="#FF5252" android:pathData="M83,57 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" />
+    <!-- Cross / Bottom -->
+    <path android:fillColor="#00E676" android:pathData="M79,61 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" />
+
+    <!-- Left Thumbstick -->
+    <path android:fillColor="#0D1B2A" android:strokeColor="#0070D1" android:strokeWidth="1" android:pathData="M43,62 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+
+    <!-- Right Thumbstick -->
+    <path android:fillColor="#0D1B2A" android:strokeColor="#0070D1" android:strokeWidth="1" android:pathData="M65,62 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+
+    <!-- Glowing Star Emblem on Top Center -->
+    <path
+        android:fillColor="#FFC107"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:pathData="M54,23 L56.8,29.1 L63.6,29.7 L58.5,34.2 L60,40.9 L54,37.4 L48,40.9 L49.5,34.2 L44.4,29.7 L51.2,29.1 Z" />
+</vector>
