@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Games
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -138,9 +138,9 @@ fun MainNavigation(
                         }
                     } else {
                         Icon(
-                            imageVector = Icons.Default.Games,
+                            painter = painterResource(R.drawable.ic_controller_logo),
                             contentDescription = "GameBoxd",
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            modifier = Modifier.padding(start = 8.dp)
                         )
                     }
                 },
