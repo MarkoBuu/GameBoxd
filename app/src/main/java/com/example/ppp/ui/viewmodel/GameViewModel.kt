@@ -1,11 +1,11 @@
 package com.example.ppp.ui.viewmodel
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.LibrarySortOption
-import com.example.ppp.data.model.LibraryTab
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.data.repository.GameRepository
 import kotlinx.coroutines.Job
@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -30,12 +31,19 @@ sealed interface ExploreUiState {
     data class Error(val message: String) : ExploreUiState
 }
 
+@Stable
 class GameViewModel(
     private val repository: GameRepository
 ) : ViewModel() {
 
     private val _isDarkTheme = MutableStateFlow(true)
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+
+    private val _showFavoritesOnly = MutableStateFlow(false)
+    val showFavoritesOnly: StateFlow<Boolean> = _showFavoritesOnly.asStateFlow()
+
+    private val _showPlatinumsOnly = MutableStateFlow(false)
+    val showPlatinumsOnly: StateFlow<Boolean> = _showPlatinumsOnly.asStateFlow()
 
     private val _selectedYearFilter = MutableStateFlow<Int?>(null)
     val selectedYearFilter: StateFlow<Int?> = _selectedYearFilter.asStateFlow()
@@ -64,14 +72,21 @@ class GameViewModel(
         initialValue = emptyList()
     )
 
-    private val _selectedLibraryTab = MutableStateFlow(LibraryTab.COMPLETED)
-    val selectedLibraryTab: StateFlow<LibraryTab> = _selectedLibraryTab.asStateFlow()
+    private val _selectedLibraryTab = MutableStateFlow(PlayStatus.COMPLETED)
+    val selectedLibraryTab: StateFlow<PlayStatus> = _selectedLibraryTab.asStateFlow()
 
     private val _selectedLibrarySort = MutableStateFlow(LibrarySortOption.RECENTLY_UPDATED)
     val selectedLibrarySort: StateFlow<LibrarySortOption> = _selectedLibrarySort.asStateFlow()
 
     val availableGenres = listOf("All", "Action", "RPG", "Adventure", "Shooter", "Indie", "Strategy", "Platformer", "Puzzle", "Sports", "Racing", "Fighting")
-    val availableYears = listOf(2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018)
+
+    val availableYears: StateFlow<List<Int>> = savedGames.map { list ->
+        list.mapNotNull { it.completionYear }.distinct().sortedDescending()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     val filteredExploreGames: StateFlow<List<Game>> = combine(
         exploreState,
@@ -92,15 +107,19 @@ class GameViewModel(
         _selectedLibrarySort,
         _librarySearchQuery,
         _selectedGenre,
+        _showFavoritesOnly,
+        _showPlatinumsOnly,
         _selectedYearFilter
     ) { flows: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
         val savedList = flows[0] as List<Game>
-        val tab = flows[1] as LibraryTab
+        val tab = flows[1] as PlayStatus
         val sortOption = flows[2] as LibrarySortOption
         val query = flows[3] as String
         val genre = flows[4] as String
-        val yearFilter = flows[5] as Int?
+        val favOnly = flows[5] as Boolean
+        val platOnly = flows[6] as Boolean
+        val yearFilter = flows[7] as Int?
 
         val trimmedQuery = query.trim().lowercase()
         val queryTokens = if (trimmedQuery.isNotEmpty()) {
@@ -109,15 +128,11 @@ class GameViewModel(
             emptyList()
         }
 
-        val filteredByTab = when (tab) {
-            LibraryTab.COMPLETED -> savedList.filter { it.playStatus == PlayStatus.COMPLETED }
-            LibraryTab.BACKLOG -> savedList.filter { it.playStatus == PlayStatus.BACKLOG }
-            LibraryTab.DROPPED -> savedList.filter { it.playStatus == PlayStatus.DROPPED }
-            LibraryTab.FAVORITES -> savedList.filter { it.isFavorite }
-            LibraryTab.PLATINUMS -> savedList.filter { it.hasPlatinum }
-        }
+        val filteredByStatus = savedList.filter { it.playStatus == tab }
 
-        val filtered = filteredByTab
+        val filtered = filteredByStatus
+            .filter { !favOnly || it.isFavorite }
+            .filter { !platOnly || it.hasPlatinum }
             .filter { yearFilter == null || it.completionYear == yearFilter }
             .filter { genre == "All" || it.genres.any { g -> g.equals(genre, ignoreCase = true) } }
             .filter {
@@ -156,6 +171,14 @@ class GameViewModel(
 
     fun toggleTheme() {
         _isDarkTheme.value = !_isDarkTheme.value
+    }
+
+    fun toggleFavoritesFilter() {
+        _showFavoritesOnly.value = !_showFavoritesOnly.value
+    }
+
+    fun togglePlatinumsFilter() {
+        _showPlatinumsOnly.value = !_showPlatinumsOnly.value
     }
 
     fun setSelectedYearFilter(year: Int?) {
@@ -223,8 +246,8 @@ class GameViewModel(
         }
     }
 
-    fun setLibraryTab(tab: LibraryTab) {
-        _selectedLibraryTab.value = tab
+    fun setLibraryTab(status: PlayStatus) {
+        _selectedLibraryTab.value = status
     }
 
     fun setLibrarySort(sortOption: LibrarySortOption) {
@@ -326,7 +349,7 @@ class GameViewModel(
                     isNextPageLoading = false,
                     canLoadMore = canLoadMorePages
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 val latest = _exploreState.value
                 if (latest is ExploreUiState.Success) {
                     _exploreState.value = latest.copy(isNextPageLoading = false)

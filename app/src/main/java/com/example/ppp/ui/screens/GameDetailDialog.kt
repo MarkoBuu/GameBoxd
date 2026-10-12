@@ -53,7 +53,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,7 +74,6 @@ import com.example.ppp.R
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.ui.components.RatingStars
-import com.example.ppp.ui.components.SortDropdown
 import com.example.ppp.ui.theme.AccentGold
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
@@ -100,7 +98,7 @@ fun GameDetailDialog(
     val initialPlatinum = game.hasPlatinum
     val initialPlaytimeInput = if (game.playtimeHours > 0) game.playtimeHours.toString() else ""
     val initialFavorite = game.isFavorite && initialStatus == PlayStatus.COMPLETED
-    val initialYear = game.completionYear ?: 2026
+    val initialYearInput = game.completionYear?.toString() ?: ""
 
     var userRating by remember { mutableFloatStateOf(initialRating) }
     var selectedStatus by remember { mutableStateOf(initialStatus) }
@@ -108,7 +106,7 @@ fun GameDetailDialog(
     var hasPlatinum by remember { mutableStateOf(initialPlatinum) }
     var playtimeInput by remember { mutableStateOf(initialPlaytimeInput) }
     var isFavorite by remember { mutableStateOf(initialFavorite) }
-    var selectedYear by remember { mutableIntStateOf(initialYear) }
+    var yearInput by remember { mutableStateOf(initialYearInput) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     val platinumEnabled = selectedStatus == PlayStatus.COMPLETED
@@ -124,7 +122,7 @@ fun GameDetailDialog(
     val effectiveFavorite = isFavorite && isCompleted
     val effectiveReview = if (isCompleted && effectiveRating > 0f) reviewText else ""
     val effectiveHours = if (detailsEnabled) playtimeInput else ""
-    val effectiveYear = if (detailsEnabled) selectedYear else null
+    val effectiveYear = if (detailsEnabled) yearInput.toIntOrNull() else null
 
     val hasChanges = userRating != initialRating ||
             selectedStatus != initialStatus ||
@@ -142,7 +140,6 @@ fun GameDetailDialog(
         PlayStatus.BACKLOG,
         PlayStatus.DROPPED
     )
-    val availableYears = listOf(2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018)
     val context = LocalContext.current
 
     val toastSavedText = stringResource(R.string.toast_saved)
@@ -264,7 +261,7 @@ fun GameDetailDialog(
                             ) {
                                 Icon(
                                     imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = "Favorite",
+                                    contentDescription = stringResource(R.string.favorite_content_desc),
                                     tint = if (isFavorite) Color(0xFFFF4081) else Color.White
                                 )
                             }
@@ -283,7 +280,7 @@ fun GameDetailDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Share,
-                                        contentDescription = "Share Review Card Image",
+                                        contentDescription = stringResource(R.string.share_review_btn),
                                         tint = Color.White
                                     )
                                 }
@@ -371,7 +368,7 @@ fun GameDetailDialog(
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         statusOptions.forEach { status ->
                             val isSelected = selectedStatus == status
@@ -398,31 +395,34 @@ fun GameDetailDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Single Year Dropdown Selector for Completed or Dropped
+                    // Year Completed / Year Dropped OutlinedTextField
                     AnimatedVisibility(
                         visible = detailsEnabled,
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut()
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = if (selectedStatus == PlayStatus.COMPLETED) "Year Completed:" else "Year Dropped:",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            SortDropdown(
-                                showText = false,
-                                options = availableYears,
-                                selected = selectedYear,
-                                optionLabel = { "$it" },
-                                onSelected = { selectedYear = it }
+                        Box(modifier = Modifier.padding(bottom = 12.dp)) {
+                            OutlinedTextField(
+                                value = yearInput,
+                                onValueChange = { input ->
+                                    if (input.isEmpty() || (input.length <= 4 && input.all { it.isDigit() } && (input.startsWith("1") || input.startsWith("2")))) {
+                                        yearInput = input
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = if (selectedStatus == PlayStatus.COMPLETED) stringResource(R.string.year_completed_label) else stringResource(R.string.year_dropped_label),
+                                        color = TextSecondary
+                                    )
+                                },
+                                placeholder = { Text("E.g. 2026") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PlayStationLightBlue,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
                             )
                         }
                     }
@@ -530,7 +530,7 @@ fun GameDetailDialog(
                             if (game.averagePlaytime > 0) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Community Avg Playtime: ${game.averagePlaytime}h",
+                                    text = stringResource(R.string.community_avg_playtime_format, game.averagePlaytime),
                                     fontSize = 11.sp,
                                     color = PlayStationLightBlue,
                                     fontWeight = FontWeight.Medium
@@ -607,7 +607,7 @@ fun GameDetailDialog(
                         )
                     }
 
-                    // Share Review Card Image Button - Available ONLY if in library and COMPLETED!
+                    // Share Review Button - Available ONLY if in library and COMPLETED!
                     if (canShareReview) {
                         OutlinedButton(
                             onClick = { performShare() },

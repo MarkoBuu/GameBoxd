@@ -80,11 +80,12 @@ fun StatsScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val savedGames by viewModel.savedGames.collectAsState()
+    val availableYears by viewModel.availableYears.collectAsState()
 
     var showBackupDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
     var selectedStatsYear by remember { mutableStateOf<Int?>(null) }
-    val yearOptions = listOf<Int?>(null) + viewModel.availableYears
+    val yearOptions: List<Int?> = listOf<Int?>(null) + availableYears
 
     val yearlyGames = if (selectedStatsYear == null) savedGames else savedGames.filter { it.completionYear == selectedStatsYear }
 
@@ -154,7 +155,7 @@ fun StatsScreen(
                     showText = false,
                     options = yearOptions,
                     selected = selectedStatsYear,
-                    optionLabel = { yr -> yr?.let { "$it" } ?: "All Time" },
+                    optionLabel = { yr -> yr?.let { "$it" } ?: stringResource(R.string.stats_all_time) },
                     onSelected = { selectedStatsYear = it }
                 )
             }
@@ -217,7 +218,7 @@ fun StatsScreen(
                     StatusRow(label = stringResource(R.string.status_completed), count = completedCount)
                     StatusRow(label = stringResource(R.string.status_backlog), count = backlogCount)
                     StatusRow(label = stringResource(R.string.status_dropped), count = droppedCount)
-                    StatusRow(label = "Favorites", count = totalFavorites)
+                    StatusRow(label = stringResource(R.string.stat_favorites), count = totalFavorites)
                     completionRate?.let { rate ->
                         StatusTextRow(
                             label = stringResource(R.string.stat_completion_rate),

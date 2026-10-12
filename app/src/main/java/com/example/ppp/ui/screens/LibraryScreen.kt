@@ -6,16 +6,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -23,41 +27,55 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ppp.R
 import com.example.ppp.data.model.LibrarySortOption
-import com.example.ppp.data.model.LibraryTab
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.ui.components.GameCard
 import com.example.ppp.ui.components.SortDropdown
+import com.example.ppp.ui.theme.AccentGold
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
 import com.example.ppp.ui.viewmodel.GameViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun LibraryScreen(
     viewModel: GameViewModel,
@@ -66,19 +84,40 @@ fun LibraryScreen(
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val horizontalScrollState = rememberScrollState()
     val selectedTab by viewModel.selectedLibraryTab.collectAsState()
     val selectedSort by viewModel.selectedLibrarySort.collectAsState()
+    val showFavoritesOnly by viewModel.showFavoritesOnly.collectAsState()
+    val showPlatinumsOnly by viewModel.showPlatinumsOnly.collectAsState()
     val selectedYearFilter by viewModel.selectedYearFilter.collectAsState()
+    val availableYears by viewModel.availableYears.collectAsState()
     val searchQuery by viewModel.librarySearchQuery.collectAsState()
     val filteredGames by viewModel.filteredLibraryGames.collectAsState()
     val savedGames by viewModel.savedGames.collectAsState()
 
-    val tabs = LibraryTab.entries
-    val yearOptions = listOf<Int?>(null) + viewModel.availableYears
-    val horizontalScrollState = rememberScrollState()
+    var showFilterBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    LaunchedEffect(selectedSort, searchQuery, selectedTab, selectedYearFilter) {
+    val tabs = listOf(
+        PlayStatus.COMPLETED,
+        PlayStatus.BACKLOG,
+        PlayStatus.DROPPED
+    )
+
+    val activeFilterTags = mutableListOf<String>()
+    if (showPlatinumsOnly) activeFilterTags.add("🏆")
+    if (showFavoritesOnly) activeFilterTags.add("❤️")
+    selectedYearFilter?.let { activeFilterTags.add("$it") }
+    val hasActiveFilters = activeFilterTags.isNotEmpty()
+
+    LaunchedEffect(
+        selectedSort,
+        searchQuery,
+        selectedTab,
+        showFavoritesOnly,
+        showPlatinumsOnly,
+        selectedYearFilter
+    ) {
         listState.scrollToItem(0)
     }
 
@@ -113,7 +152,7 @@ fun LibraryScreen(
                 }
             }
 
-            // Normal Top-Level Tabs: Completed, Backlog, Dropped, Favorites️, Platinums
+            // Primary Status Tabs (Completed, Backlog, Dropped)
             item {
                 Row(
                     modifier = Modifier
@@ -121,25 +160,19 @@ fun LibraryScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    tabs.forEach { tab ->
-                        val isSelected = selectedTab == tab
-                        val count = when (tab) {
-                            LibraryTab.COMPLETED -> savedGames.count { it.playStatus == PlayStatus.COMPLETED }
-                            LibraryTab.BACKLOG -> savedGames.count { it.playStatus == PlayStatus.BACKLOG }
-                            LibraryTab.DROPPED -> savedGames.count { it.playStatus == PlayStatus.DROPPED }
-                            LibraryTab.FAVORITES -> savedGames.count { it.isFavorite }
-                            LibraryTab.PLATINUMS -> savedGames.count { it.hasPlatinum }
-                        }
+                    tabs.forEach { status ->
+                        val isSelected = selectedTab == status
+                        val statusCount = savedGames.count { it.playStatus == status }
                         FilterChip(
                             selected = isSelected,
                             onClick = {
                                 focusManager.clearFocus()
                                 keyboardController?.hide()
-                                viewModel.setLibraryTab(tab)
+                                viewModel.setLibraryTab(status)
                             },
                             label = {
                                 Text(
-                                    text = "${tab.displayName} ($count)",
+                                    text = "${status.displayName} ($statusCount)",
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -155,28 +188,52 @@ fun LibraryScreen(
                     }
                 }
             }
-            // Compact Row: Year Dropdown + Sort Dropdown
+
+            // Compact Bar: Filter Box + SortDropdown
             item {
-                AnimatedVisibility(selectedTab != LibraryTab.BACKLOG) {
+                AnimatedVisibility(selectedTab != PlayStatus.BACKLOG) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(horizontalScrollState),
-                        horizontalArrangement = Arrangement.spacedBy(
-                            space = 8.dp,
-                            alignment = Alignment.End
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(horizontalScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        SortDropdown(
-                            showText = false,
-                            options = yearOptions,
-                            selected = selectedYearFilter,
-                            optionLabel = { yr ->
-                                yr?.let { "$it" } ?: stringResource(R.string.filter_all_years)
-                            },
-                            onSelected = viewModel::setSelectedYearFilter
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    showFilterBottomSheet = true
+                                }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Filter By: ",
+                                    fontSize = 13.sp,
+                                    color = TextSecondary
+                                )
+                                Text(
+                                    text = if (hasActiveFilters) activeFilterTags.joinToString(" · ") else "Default",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PlayStationLightBlue ,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "Filter Options",
+                                    tint = PlayStationLightBlue,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
                         SortDropdown(
                             options = LibrarySortOption.entries,
                             selected = selectedSort,
@@ -252,6 +309,158 @@ fun LibraryScreen(
                     imageVector = Icons.Default.KeyboardArrowUp,
                     contentDescription = "Scroll to top"
                 )
+            }
+        }
+    }
+
+    // Modal Bottom Sheet for Filter Options
+    if (showFilterBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showFilterBottomSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Filter Options",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (hasActiveFilters) {
+                        TextButton(
+                            onClick = {
+                                if (showFavoritesOnly) viewModel.toggleFavoritesFilter()
+                                if (showPlatinumsOnly) viewModel.togglePlatinumsFilter()
+                                viewModel.setSelectedYearFilter(null)
+                            }
+                        ) {
+                            Text(
+                                text = "Reset Filters",
+                                color = PlayStationLightBlue,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                if (selectedTab == PlayStatus.COMPLETED) {
+                    // Quick Filters Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Quick Filters",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextSecondary
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = showFavoritesOnly,
+                                onClick = { viewModel.toggleFavoritesFilter() },
+                                label = { Text("Favorites", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFFF4081),
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = TextSecondary
+                                )
+                            )
+                            FilterChip(
+                                selected = showPlatinumsOnly,
+                                onClick = { viewModel.togglePlatinumsFilter() },
+                                label = { Text("Platinum Trophy", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AccentGold,
+                                    selectedLabelColor = MaterialTheme.colorScheme.surface,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = TextSecondary
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Filter By Year Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = if (selectedTab == PlayStatus.COMPLETED) "Completion Year" else "Year Dropped",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedYearFilter == null,
+                            onClick = { viewModel.setSelectedYearFilter(null) },
+                            label = {
+                                Text(
+                                    stringResource(R.string.filter_all_years),
+                                    fontSize = 12.sp
+                                )
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PlayStationLightBlue,
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                labelColor = TextSecondary
+                            )
+                        )
+                        availableYears.forEach { yr ->
+                            val isYrSelected = selectedYearFilter == yr
+                            FilterChip(
+                                selected = isYrSelected,
+                                onClick = { viewModel.setSelectedYearFilter(yr) },
+                                label = { Text("$yr", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PlayStationLightBlue,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = TextSecondary
+                                )
+                            )
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = { showFilterBottomSheet = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 16.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PlayStationLightBlue)
+                ) {
+                    Text(
+                        text = "Apply Filters",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }

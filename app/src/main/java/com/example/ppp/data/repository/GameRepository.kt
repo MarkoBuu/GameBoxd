@@ -104,7 +104,7 @@ class GameRepository(
             _savedGamesMap.value = newMap
             _savedGames.value = refreshedList
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

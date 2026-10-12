@@ -5,13 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -53,18 +50,15 @@ fun <T> SortDropdown(
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .clickable { expanded = true }
-                .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if(showText) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(16.dp)
+            if (showText) {
+                Text(
+                    text = "Sort By: ",
+                    fontSize = 13.sp,
+                    color = TextSecondary
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = "Sort By: ", fontSize = 13.sp, color = TextSecondary)
             }
             Text(
                 text = optionLabel(selected),

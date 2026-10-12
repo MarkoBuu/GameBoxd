@@ -9,7 +9,6 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -81,10 +80,10 @@ suspend fun generateReviewCardBitmap(
         } catch (_: Exception) {}
     }
 
-    // 3. Draw Top Backdrop Image with Center-Crop and Fade Overlay
+    // 3. Draw Top Backdrop Image with Fade Overlay
     if (bgBitmap != null) {
-        val croppedBg = centerCropBitmap(bgBitmap, width, 550)
-        canvas.drawBitmap(croppedBg, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+        val destRect = RectF(0f, 0f, width.toFloat(), 550f)
+        canvas.drawBitmap(bgBitmap, null, destRect, Paint(Paint.FILTER_BITMAP_FLAG))
 
         // Gradient overlay to blend backdrop smoothly into background
         val fadePaint = Paint().apply {
@@ -94,16 +93,17 @@ suspend fun generateReviewCardBitmap(
                 Shader.TileMode.CLAMP
             )
         }
-        canvas.drawRect(0f, 0f, width.toFloat(), 550f, fadePaint)
+        canvas.drawRect(destRect, fadePaint)
     }
 
-    // 4. Draw Cover Art Thumbnail (Center-Cropped, Rounded Corners)
+    // 4. Draw Cover Art Thumbnail (Rounded Corners)
     val coverLeft = 70f
     val coverTop = 380f
     val coverWidth = 240f
     val coverHeight = 320f
 
     if (coverBitmap != null) {
+        val coverRect = RectF(coverLeft, coverTop, coverLeft + coverWidth, coverTop + coverHeight)
         val roundedBitmap = getRoundedCornerBitmap(coverBitmap, 24f, coverWidth.toInt(), coverHeight.toInt())
         canvas.drawBitmap(roundedBitmap, coverLeft, coverTop, Paint(Paint.FILTER_BITMAP_FLAG))
     }
@@ -294,43 +294,6 @@ suspend fun generateReviewCardBitmap(
     bitmap
 }
 
-private fun centerCropBitmap(src: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
-    val srcWidth = src.width
-    val srcHeight = src.height
-
-    if (srcWidth == targetWidth && srcHeight == targetHeight) return src
-
-    val srcAspect = srcWidth.toFloat() / srcHeight.toFloat()
-    val targetAspect = targetWidth.toFloat() / targetHeight.toFloat()
-
-    val cropLeft: Float
-    val cropTop: Float
-    val cropRight: Float
-    val cropBottom: Float
-
-    if (srcAspect > targetAspect) {
-        val newSrcWidth = srcHeight * targetAspect
-        cropLeft = (srcWidth - newSrcWidth) / 2f
-        cropTop = 0f
-        cropRight = cropLeft + newSrcWidth
-        cropBottom = srcHeight.toFloat()
-    } else {
-        val newSrcHeight = srcWidth / targetAspect
-        cropLeft = 0f
-        cropTop = (srcHeight - newSrcHeight) / 2f
-        cropRight = srcWidth.toFloat()
-        cropBottom = cropTop + newSrcHeight
-    }
-
-    val output = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(output)
-    val srcRect = Rect(cropLeft.toInt(), cropTop.toInt(), cropRight.toInt(), cropBottom.toInt())
-    val destRect = Rect(0, 0, targetWidth, targetHeight)
-    val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-    canvas.drawBitmap(src, srcRect, destRect, paint)
-    return output
-}
-
 private fun buildStarRatingString(rating: Float): String {
     if (rating <= 0f) return "☆☆☆☆☆"
     val fullStars = rating.toInt()
@@ -345,7 +308,7 @@ private fun buildStarRatingString(rating: Float): String {
 }
 
 private fun getRoundedCornerBitmap(bitmap: Bitmap, pixels: Float, width: Int, height: Int): Bitmap {
-    val cropped = centerCropBitmap(bitmap, width, height)
+    val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
     val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(output)
 
@@ -357,7 +320,7 @@ private fun getRoundedCornerBitmap(bitmap: Bitmap, pixels: Float, width: Int, he
 
     canvas.drawRoundRect(rect, pixels, pixels, paint)
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-    canvas.drawBitmap(cropped, 0f, 0f, paint)
+    canvas.drawBitmap(scaled, 0f, 0f, paint)
 
     return output
 }
