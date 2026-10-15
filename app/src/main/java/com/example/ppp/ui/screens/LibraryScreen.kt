@@ -90,6 +90,7 @@ fun LibraryScreen(
     val showFavoritesOnly by viewModel.showFavoritesOnly.collectAsState()
     val showPlatinumsOnly by viewModel.showPlatinumsOnly.collectAsState()
     val selectedYearFilter by viewModel.selectedYearFilter.collectAsState()
+    val selectedRatingFilter by viewModel.selectedRatingFilter.collectAsState()
     val availableYears by viewModel.availableYears.collectAsState()
     val searchQuery by viewModel.librarySearchQuery.collectAsState()
     val filteredGames by viewModel.filteredLibraryGames.collectAsState()
@@ -108,6 +109,10 @@ fun LibraryScreen(
     if (showPlatinumsOnly) activeFilterTags.add("🏆")
     if (showFavoritesOnly) activeFilterTags.add("❤️")
     selectedYearFilter?.let { activeFilterTags.add("$it") }
+    selectedRatingFilter?.let { r ->
+        val formatted = if (r % 1f == 0f) "${r.toInt()}★" else "$r★"
+        activeFilterTags.add(formatted)
+    }
     val hasActiveFilters = activeFilterTags.isNotEmpty()
 
     LaunchedEffect(
@@ -116,7 +121,8 @@ fun LibraryScreen(
         selectedTab,
         showFavoritesOnly,
         showPlatinumsOnly,
-        selectedYearFilter
+        selectedYearFilter,
+        selectedRatingFilter
     ) {
         listState.scrollToItem(0)
     }
@@ -193,7 +199,9 @@ fun LibraryScreen(
             item {
                 AnimatedVisibility(selectedTab != PlayStatus.BACKLOG) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(horizontalScrollState),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(horizontalScrollState),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -221,7 +229,7 @@ fun LibraryScreen(
                                     text = if (hasActiveFilters) activeFilterTags.joinToString(" · ") else "Default",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = PlayStationLightBlue ,
+                                    color = PlayStationLightBlue,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -345,6 +353,7 @@ fun LibraryScreen(
                                 if (showFavoritesOnly) viewModel.toggleFavoritesFilter()
                                 if (showPlatinumsOnly) viewModel.togglePlatinumsFilter()
                                 viewModel.setSelectedYearFilter(null)
+                                viewModel.setSelectedRatingFilter(null)
                             }
                         ) {
                             Text(
@@ -394,6 +403,55 @@ fun LibraryScreen(
                                     labelColor = TextSecondary
                                 )
                             )
+                        }
+                    }
+
+                    // Rating Filter Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Rating Filter",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextSecondary
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = selectedRatingFilter == null,
+                                onClick = { viewModel.setSelectedRatingFilter(null) },
+                                label = { Text("All Ratings", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PlayStationLightBlue,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = TextSecondary
+                                )
+                            )
+                            val ratingOptions =
+                                listOf(5.0f, 4.5f, 4.0f, 3.5f, 3.0f, 2.5f, 2.0f, 1.5f, 1.0f)
+                            ratingOptions.forEach { r ->
+                                val isSelected = selectedRatingFilter?.let {
+                                    kotlin.math.abs(it - r) < 0.01f
+                                } ?: false
+                                val labelText = if (r % 1f == 0f) "${r.toInt()}.0 ★" else "$r ★"
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { viewModel.setSelectedRatingFilter(if (isSelected) null else r) },
+                                    label = { Text(labelText, fontSize = 12.sp) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = PlayStationLightBlue,
+                                        selectedLabelColor = Color.White,
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        labelColor = TextSecondary
+                                    )
+                                )
+                            }
                         }
                     }
                 }

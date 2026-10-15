@@ -48,6 +48,9 @@ class GameViewModel(
     private val _selectedYearFilter = MutableStateFlow<Int?>(null)
     val selectedYearFilter: StateFlow<Int?> = _selectedYearFilter.asStateFlow()
 
+    private val _selectedRatingFilter = MutableStateFlow<Float?>(null)
+    val selectedRatingFilter: StateFlow<Float?> = _selectedRatingFilter.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -109,7 +112,8 @@ class GameViewModel(
         _selectedGenre,
         _showFavoritesOnly,
         _showPlatinumsOnly,
-        _selectedYearFilter
+        _selectedYearFilter,
+        _selectedRatingFilter
     ) { flows: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
         val savedList = flows[0] as List<Game>
@@ -120,6 +124,7 @@ class GameViewModel(
         val favOnly = flows[5] as Boolean
         val platOnly = flows[6] as Boolean
         val yearFilter = flows[7] as Int?
+        val ratingFilter = flows[8] as Float?
 
         val trimmedQuery = query.trim().lowercase()
         val queryTokens = if (trimmedQuery.isNotEmpty()) {
@@ -134,6 +139,7 @@ class GameViewModel(
             .filter { !favOnly || it.isFavorite }
             .filter { !platOnly || it.hasPlatinum }
             .filter { yearFilter == null || it.completionYear == yearFilter }
+            .filter { ratingFilter == null || kotlin.math.abs(it.userRating - ratingFilter) < 0.01f }
             .filter { genre == "All" || it.genres.any { g -> g.equals(genre, ignoreCase = true) } }
             .filter {
                 if (queryTokens.isEmpty()) true
@@ -183,6 +189,10 @@ class GameViewModel(
 
     fun setSelectedYearFilter(year: Int?) {
         _selectedYearFilter.value = year
+    }
+
+    fun setSelectedRatingFilter(rating: Float?) {
+        _selectedRatingFilter.value = rating
     }
 
     fun toggleFavorite(game: Game) {

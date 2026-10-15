@@ -107,6 +107,7 @@ fun GameDetailDialog(
     var playtimeInput by remember { mutableStateOf(initialPlaytimeInput) }
     var isFavorite by remember { mutableStateOf(initialFavorite) }
     var yearInput by remember { mutableStateOf(initialYearInput) }
+    val currentYear = remember { java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     val platinumEnabled = selectedStatus == PlayStatus.COMPLETED
@@ -122,7 +123,7 @@ fun GameDetailDialog(
     val effectiveFavorite = isFavorite && isCompleted
     val effectiveReview = if (isCompleted && effectiveRating > 0f) reviewText else ""
     val effectiveHours = if (detailsEnabled) playtimeInput else ""
-    val effectiveYear = if (detailsEnabled) yearInput.toIntOrNull() else null
+    val effectiveYear = if (detailsEnabled && yearInput.length == 4) yearInput.toIntOrNull()?.takeIf { it in 2000..currentYear } else null
 
     val hasChanges = userRating != initialRating ||
             selectedStatus != initialStatus ||
@@ -405,8 +406,13 @@ fun GameDetailDialog(
                             OutlinedTextField(
                                 value = yearInput,
                                 onValueChange = { input ->
-                                    if (input.isEmpty() || (input.length <= 4 && input.all { it.isDigit() } && (input.startsWith("1") || input.startsWith("2")))) {
+                                    if (input.isEmpty()) {
                                         yearInput = input
+                                    } else if (input.length <= 4 && input.all { it.isDigit() } && input.startsWith("2")) {
+                                        val minYearForPrefix = input.padEnd(4, '0').toIntOrNull()
+                                        if (minYearForPrefix != null && minYearForPrefix <= currentYear) {
+                                            yearInput = input
+                                        }
                                     }
                                 },
                                 label = {
@@ -415,7 +421,7 @@ fun GameDetailDialog(
                                         color = TextSecondary
                                     )
                                 },
-                                placeholder = { Text("E.g. 2026") },
+                                placeholder = { Text("E.g. $currentYear") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
