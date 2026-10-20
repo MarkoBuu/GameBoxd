@@ -1,7 +1,9 @@
 package com.example.ppp.data.repository
 
+import android.content.SharedPreferences
 import com.example.ppp.BuildConfig
-import com.example.ppp.data.local.LocalGameDbHelper
+import com.example.ppp.data.local.GameDao
+import com.example.ppp.data.local.GameEntity
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.PlayStatus
@@ -14,7 +16,8 @@ import kotlinx.serialization.json.Json
 
 class GameRepository(
     private val ktorApi: RawgKtorApi,
-    private val dbHelper: LocalGameDbHelper
+    private val gameDao: GameDao,
+    private val prefs: SharedPreferences
 ) {
     private var apiKey: String = BuildConfig.RAWG_API_KEY
 
@@ -22,11 +25,38 @@ class GameRepository(
     private val _savedGames = MutableStateFlow<List<Game>>(emptyList())
     val savedGamesFlow: StateFlow<List<Game>> = _savedGames.asStateFlow()
 
+    private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
+    val recentSearchesFlow: StateFlow<List<String>> = _recentSearches.asStateFlow()
+
     init {
-        val initialSavedList = dbHelper.getAllSavedGames()
+        val initialSavedList = gameDao.getAllSavedGames().map { it.toGame() }
         val initialMap = initialSavedList.associateBy { it.id }
         _savedGamesMap.value = initialMap
         _savedGames.value = initialSavedList
+        loadRecentSearches()
+    }
+
+    private fun loadRecentSearches() {
+        val raw = prefs.getString("recent_searches", "") ?: ""
+        if (raw.isNotBlank()) {
+            _recentSearches.value = raw.split("|||").filter { it.isNotBlank() }
+        }
+    }
+
+    fun addRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return
+        val current = _recentSearches.value.toMutableList()
+        current.remove(trimmed)
+        current.add(0, trimmed)
+        val trimmedList = current.take(5)
+        _recentSearches.value = trimmedList
+        prefs.edit().putString("recent_searches", trimmedList.joinToString("|||")).apply()
+    }
+
+    fun clearRecentSearches() {
+        _recentSearches.value = emptyList()
+        prefs.edit().remove("recent_searches").apply()
     }
 
     fun getGameById(id: Int): Game? {
@@ -38,10 +68,10 @@ class GameRepository(
         val newMap = _savedGamesMap.value.toMutableMap()
         if (updated.playStatus == PlayStatus.NONE && !updated.isFavorite) {
             newMap.remove(game.id)
-            dbHelper.deleteGame(game.id)
+            gameDao.deleteById(game.id)
         } else {
             newMap[game.id] = updated
-            dbHelper.saveGame(updated)
+            gameDao.insertOrUpdate(GameEntity.fromGame(updated))
         }
         _savedGamesMap.value = newMap
         _savedGames.value = newMap.values.sortedByDescending { it.updatedAt }
@@ -70,10 +100,10 @@ class GameRepository(
         val newMap = _savedGamesMap.value.toMutableMap()
         if (status == PlayStatus.NONE && !isFavorite) {
             newMap.remove(game.id)
-            dbHelper.deleteGame(game.id)
+            gameDao.deleteById(game.id)
         } else {
             newMap[game.id] = updated
-            dbHelper.saveGame(updated)
+            gameDao.insertOrUpdate(GameEntity.fromGame(updated))
         }
         _savedGamesMap.value = newMap
         _savedGames.value = newMap.values.sortedByDescending { it.updatedAt }
@@ -82,7 +112,7 @@ class GameRepository(
     fun removeGameFromLibrary(gameId: Int) {
         val newMap = _savedGamesMap.value.toMutableMap()
         newMap.remove(gameId)
-        dbHelper.deleteGame(gameId)
+        gameDao.deleteById(gameId)
         _savedGamesMap.value = newMap
         _savedGames.value = newMap.values.sortedByDescending { it.updatedAt }
     }
@@ -96,10 +126,9 @@ class GameRepository(
         return try {
             val json = Json { ignoreUnknownKeys = true }
             val importedGames = json.decodeFromString(ListSerializer(Game.serializer()), jsonString)
-            importedGames.forEach { game ->
-                dbHelper.saveGame(game)
-            }
-            val refreshedList = dbHelper.getAllSavedGames()
+            if (importedGames.isEmpty()) return false
+            gameDao.insertOrUpdateAll(importedGames.map { GameEntity.fromGame(it) })
+            val refreshedList = gameDao.getAllSavedGames().map { it.toGame() }
             val newMap = refreshedList.associateBy { it.id }
             _savedGamesMap.value = newMap
             _savedGames.value = refreshedList

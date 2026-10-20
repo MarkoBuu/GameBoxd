@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.PlayStatus
+import androidx.core.database.sqlite.transaction
 
 class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -32,6 +33,8 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             )
         """.trimIndent()
         db.execSQL(createTable)
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_updated_at ON $TABLE_GAMES ($COLUMN_UPDATED_AT DESC)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_play_status ON $TABLE_GAMES ($COLUMN_PLAY_STATUS)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -46,6 +49,10 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             db.execSQL("ALTER TABLE $TABLE_GAMES ADD COLUMN $COLUMN_AVERAGE_PLAYTIME INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE $TABLE_GAMES ADD COLUMN $COLUMN_IS_FAVORITE INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE $TABLE_GAMES ADD COLUMN $COLUMN_COMPLETION_YEAR INTEGER")
+        }
+        if (oldVersion < 5) {
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_updated_at ON $TABLE_GAMES ($COLUMN_UPDATED_AT DESC)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_play_status ON $TABLE_GAMES ($COLUMN_PLAY_STATUS)")
         }
     }
 
@@ -79,10 +86,10 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 val platforms = if (platformsStr.isBlank()) emptyList() else platformsStr.split(",")
                 val genresStr = if (genresIdx != -1) c.getString(genresIdx) else ""
                 val genres = if (genresStr.isBlank()) emptyList() else genresStr.split(",")
-                val hasPlatinum = if (platIdx != -1) c.getInt(platIdx) == 1 else false
+                val hasPlatinum = platIdx != -1 && c.getInt(platIdx) == 1
                 val playtimeHours = if (playtimeIdx != -1) c.getInt(playtimeIdx) else 0
                 val averagePlaytime = if (avgPlaytimeIdx != -1) c.getInt(avgPlaytimeIdx) else 0
-                val isFavorite = if (favIdx != -1) c.getInt(favIdx) == 1 else false
+                val isFavorite = favIdx != -1 && c.getInt(favIdx) == 1
                 val completionYear = if (yearIdx != -1 && !c.isNull(yearIdx)) c.getInt(yearIdx) else null
 
                 list.add(
@@ -135,6 +142,37 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         db.insertWithOnConflict(TABLE_GAMES, null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
+    fun saveGames(games: List<Game>) {
+        val db = writableDatabase
+        db.transaction {
+            try {
+                for (game in games) {
+                    val values = ContentValues().apply {
+                        put(COLUMN_ID, game.id)
+                        put(COLUMN_TITLE, game.title)
+                        put(COLUMN_COVER_URL, game.coverUrl)
+                        put(COLUMN_BACKGROUND_URL, game.backgroundUrl)
+                        put(COLUMN_RELEASE_DATE, game.releaseDate)
+                        put(COLUMN_PLATFORMS, game.platforms.joinToString(","))
+                        put(COLUMN_GENRES, game.genres.joinToString(","))
+                        put(COLUMN_RAWG_RATING, game.rawgRating)
+                        put(COLUMN_USER_RATING, game.userRating)
+                        put(COLUMN_PLAY_STATUS, game.playStatus.name)
+                        put(COLUMN_REVIEW_TEXT, game.reviewText)
+                        put(COLUMN_HAS_PLATINUM, if (game.hasPlatinum) 1 else 0)
+                        put(COLUMN_PLAYTIME_HOURS, game.playtimeHours)
+                        put(COLUMN_AVERAGE_PLAYTIME, game.averagePlaytime)
+                        put(COLUMN_IS_FAVORITE, if (game.isFavorite) 1 else 0)
+                        put(COLUMN_COMPLETION_YEAR, game.completionYear)
+                        put(COLUMN_UPDATED_AT, game.updatedAt)
+                    }
+                    insertWithOnConflict(TABLE_GAMES, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+            } finally {
+            }
+        }
+    }
+
     fun deleteGame(gameId: Int) {
         val db = writableDatabase
         db.delete(TABLE_GAMES, "$COLUMN_ID = ?", arrayOf(gameId.toString()))
@@ -142,7 +180,7 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "playstation_rater.db"
-        private const val DATABASE_VERSION = 4
+        private const val DATABASE_VERSION = 5
 
         private const val TABLE_GAMES = "saved_games"
         private const val COLUMN_ID = "id"

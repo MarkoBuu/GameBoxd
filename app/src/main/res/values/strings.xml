@@ -27,6 +27,14 @@
     <string name="results_for">Results for </string>
     <string name="all_games">All games</string>
     <string name="filter_all_years">All Years</string>
+    <string name="filter_options">Filter Options</string>
+    <string name="reset_filter">Reset Filters</string>
+    <string name="quick_filters">Quick Filters</string>
+    <string name="all_ratings">All Ratings</string>
+    <string name="rating">Rating</string>
+    <string name="completion_year">Completion Year</string>
+    <string name="year_dropped">Year Dropped</string>
+    <string name="apply_filters">Apply Filters</string>
 
     <!-- Sort Options -->
     <string name="sort_top_rated">Top Rated</string>

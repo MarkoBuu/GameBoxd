@@ -70,6 +70,7 @@ import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.ui.components.GameCard
 import com.example.ppp.ui.components.SortDropdown
 import com.example.ppp.ui.theme.AccentGold
+import com.example.ppp.ui.theme.FavoritesRed
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
 import com.example.ppp.ui.viewmodel.GameViewModel
@@ -341,7 +342,7 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Filter Options",
+                        text = stringResource(R.string.filter_options),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -357,7 +358,7 @@ fun LibraryScreen(
                             }
                         ) {
                             Text(
-                                text = "Reset Filters",
+                                text = stringResource(R.string.reset_filter),
                                 color = PlayStationLightBlue,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -370,7 +371,7 @@ fun LibraryScreen(
                     // Quick Filters Section
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Quick Filters",
+                            text = stringResource(R.string.quick_filters),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextSecondary
@@ -385,7 +386,7 @@ fun LibraryScreen(
                                 label = { Text("Favorites", fontSize = 12.sp) },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFFFF4081),
+                                    selectedContainerColor = FavoritesRed,
                                     selectedLabelColor = Color.White,
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     labelColor = TextSecondary
@@ -409,7 +410,7 @@ fun LibraryScreen(
                     // Rating Filter Section
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Rating Filter",
+                            text = stringResource(R.string.rating),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextSecondary
@@ -423,7 +424,12 @@ fun LibraryScreen(
                             FilterChip(
                                 selected = selectedRatingFilter == null,
                                 onClick = { viewModel.setSelectedRatingFilter(null) },
-                                label = { Text("All Ratings", fontSize = 12.sp) },
+                                label = {
+                                    Text(
+                                        stringResource(R.string.all_ratings),
+                                        fontSize = 12.sp
+                                    )
+                                },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PlayStationLightBlue,
@@ -459,7 +465,11 @@ fun LibraryScreen(
                 // Filter By Year Section
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = if (selectedTab == PlayStatus.COMPLETED) "Completion Year" else "Year Dropped",
+                        text = if (selectedTab == PlayStatus.COMPLETED)
+                            stringResource(R.string.completion_year) else
+                            stringResource(
+                                R.string.year_dropped
+                            ),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextSecondary
@@ -514,7 +524,7 @@ fun LibraryScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = PlayStationLightBlue)
                 ) {
                     Text(
-                        text = "Apply Filters",
+                        text = stringResource(R.string.apply_filters),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )

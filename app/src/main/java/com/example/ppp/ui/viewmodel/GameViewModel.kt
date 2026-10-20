@@ -54,6 +54,12 @@ class GameViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    val recentSearches: StateFlow<List<String>> = repository.recentSearchesFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     private val _librarySearchQuery = MutableStateFlow("")
     val librarySearchQuery: StateFlow<String> = _librarySearchQuery.asStateFlow()
 
@@ -136,6 +142,7 @@ class GameViewModel(
         val filteredByStatus = savedList.filter { it.playStatus == tab }
 
         val filtered = filteredByStatus
+            .asSequence()
             .filter { !favOnly || it.isFavorite }
             .filter { !platOnly || it.hasPlatinum }
             .filter { yearFilter == null || it.completionYear == yearFilter }
@@ -148,7 +155,7 @@ class GameViewModel(
                     queryTokens.all { token -> repository.matchesToken(titleLower, token) }
                 }
             }
-
+            .toList()
         when (sortOption) {
             LibrarySortOption.RECENTLY_UPDATED -> filtered.sortedByDescending { it.updatedAt }
             LibrarySortOption.HIGHEST_RATING -> filtered.sortedByDescending { it.userRating }
@@ -240,11 +247,18 @@ class GameViewModel(
         )
     }
 
+    fun clearRecentSearches() {
+        repository.clearRecentSearches()
+    }
+
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
         searchDebounceJob?.cancel()
         searchDebounceJob = viewModelScope.launch {
             delay(400.milliseconds) // Debounce search input
+            if (query.trim().length >= 2) {
+                repository.addRecentSearch(query)
+            }
             fetchInitialPage()
         }
     }
@@ -370,8 +384,11 @@ class GameViewModel(
         }
     }
 
+    private var fetchJob: Job? = null
+
     private fun fetchInitialPage() {
-        viewModelScope.launch {
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
             isPageLoading = true
             currentPage = 1
             canLoadMorePages = true
@@ -396,6 +413,8 @@ class GameViewModel(
                     isNextPageLoading = false,
                     canLoadMore = canLoadMorePages
                 )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _exploreState.value = ExploreUiState.Error(e.message ?: "Failed to fetch games")
             } finally {
