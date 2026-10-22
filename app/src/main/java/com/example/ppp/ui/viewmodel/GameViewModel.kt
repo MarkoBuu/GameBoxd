@@ -54,12 +54,6 @@ class GameViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val recentSearches: StateFlow<List<String>> = repository.recentSearchesFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
     private val _librarySearchQuery = MutableStateFlow("")
     val librarySearchQuery: StateFlow<String> = _librarySearchQuery.asStateFlow()
 
@@ -97,13 +91,9 @@ class GameViewModel(
         initialValue = emptyList()
     )
 
-    val filteredExploreGames: StateFlow<List<Game>> = combine(
-        exploreState,
-        _selectedGenre
-    ) { state, genre ->
+    val filteredExploreGames: StateFlow<List<Game>> = exploreState.map { state ->
         if (state !is ExploreUiState.Success) emptyList()
-        else if (genre == "All") state.games
-        else state.games.filter { g -> g.genres.any { it.equals(genre, ignoreCase = true) } }
+        else state.games
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -247,18 +237,11 @@ class GameViewModel(
         )
     }
 
-    fun clearRecentSearches() {
-        repository.clearRecentSearches()
-    }
-
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
         searchDebounceJob?.cancel()
         searchDebounceJob = viewModelScope.launch {
             delay(400.milliseconds) // Debounce search input
-            if (query.trim().length >= 2) {
-                repository.addRecentSearch(query)
-            }
             fetchInitialPage()
         }
     }

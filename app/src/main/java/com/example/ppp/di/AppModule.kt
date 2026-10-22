@@ -1,6 +1,5 @@
 package com.example.ppp.di
 
-import android.content.Context
 import androidx.room.Room
 import com.example.ppp.data.local.AppDatabase
 import com.example.ppp.data.remote.RawgKtorApi
@@ -26,7 +25,6 @@ val appModule = module {
             .build()
     }
     single { get<AppDatabase>().gameDao() }
-    single { androidContext().getSharedPreferences("ppp_prefs", Context.MODE_PRIVATE) }
-    single { GameRepository(get(), get(), get()) }
+    single { GameRepository(get(), get()) }
     viewModel { GameViewModel(get()) }
 }

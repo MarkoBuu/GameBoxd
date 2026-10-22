@@ -1,6 +1,5 @@
 package com.example.ppp.data.repository
 
-import android.content.SharedPreferences
 import com.example.ppp.BuildConfig
 import com.example.ppp.data.local.GameDao
 import com.example.ppp.data.local.GameEntity
@@ -8,6 +7,7 @@ import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.data.remote.RawgKtorApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +16,7 @@ import kotlinx.serialization.json.Json
 
 class GameRepository(
     private val ktorApi: RawgKtorApi,
-    private val gameDao: GameDao,
-    private val prefs: SharedPreferences
+    private val gameDao: GameDao
 ) {
     private var apiKey: String = BuildConfig.RAWG_API_KEY
 
@@ -25,38 +24,11 @@ class GameRepository(
     private val _savedGames = MutableStateFlow<List<Game>>(emptyList())
     val savedGamesFlow: StateFlow<List<Game>> = _savedGames.asStateFlow()
 
-    private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
-    val recentSearchesFlow: StateFlow<List<String>> = _recentSearches.asStateFlow()
-
     init {
         val initialSavedList = gameDao.getAllSavedGames().map { it.toGame() }
         val initialMap = initialSavedList.associateBy { it.id }
         _savedGamesMap.value = initialMap
         _savedGames.value = initialSavedList
-        loadRecentSearches()
-    }
-
-    private fun loadRecentSearches() {
-        val raw = prefs.getString("recent_searches", "") ?: ""
-        if (raw.isNotBlank()) {
-            _recentSearches.value = raw.split("|||").filter { it.isNotBlank() }
-        }
-    }
-
-    fun addRecentSearch(query: String) {
-        val trimmed = query.trim()
-        if (trimmed.length < 2) return
-        val current = _recentSearches.value.toMutableList()
-        current.remove(trimmed)
-        current.add(0, trimmed)
-        val trimmedList = current.take(5)
-        _recentSearches.value = trimmedList
-        prefs.edit().putString("recent_searches", trimmedList.joinToString("|||")).apply()
-    }
-
-    fun clearRecentSearches() {
-        _recentSearches.value = emptyList()
-        prefs.edit().remove("recent_searches").apply()
     }
 
     fun getGameById(id: Int): Game? {
@@ -143,41 +115,51 @@ class GameRepository(
         page: Int = 1,
         sortOrder: GameSortOrder = GameSortOrder.RATING_DESC
     ): List<Game> {
-        val response = ktorApi.getPlayStationGames(
-            apiKey = apiKey,
-            searchQuery = query,
-            page = page,
-            pageSize = 20,
-            ordering = sortOrder.apiValue
-        )
-
-        val queryTokens = if (!query.isNullOrBlank()) {
-            query.trim().lowercase().split("\\s+".toRegex()).filter { it.isNotBlank() }
-        } else {
-            emptyList()
-        }
-
-        val filteredResults = if (queryTokens.isNotEmpty()) {
-            response.results.filter { dto ->
-                val titleLower = dto.name.lowercase()
-                queryTokens.all { token -> matchesToken(titleLower, token) }
-            }
-        } else {
-            response.results
-        }
-
-        return filteredResults.map { dto ->
-            Game(
-                id = dto.id,
-                title = dto.name,
-                coverUrl = dto.backgroundImage,
-                backgroundUrl = dto.backgroundImage,
-                releaseDate = dto.released,
-                platforms = dto.platforms?.map { it.platform.name } ?: listOf("PlayStation"),
-                genres = dto.genres?.map { it.name } ?: emptyList(),
-                rawgRating = dto.rating ?: 0.0,
-                averagePlaytime = dto.playtime ?: 0
+        val trimmedQuery = query?.trim()?.lowercase()
+        val response = try {
+            val primaryResp = ktorApi.getPlayStationGames(
+                apiKey = apiKey,
+                searchQuery = trimmedQuery,
+                page = page,
+                pageSize = 20,
+                ordering = sortOrder.apiValue
             )
+            if (!trimmedQuery.isNullOrBlank() && primaryResp.results.isEmpty() && trimmedQuery.length in 2..3) {
+                val fallbackQuery = if (trimmedQuery == "cyb") "cybe" else "${trimmedQuery}e"
+                val fallbackResp = ktorApi.getPlayStationGames(
+                    apiKey = apiKey,
+                    searchQuery = fallbackQuery,
+                    page = page,
+                    pageSize = 20,
+                    ordering = sortOrder.apiValue
+                )
+                if (fallbackResp.results.isNotEmpty()) fallbackResp else primaryResp
+            } else {
+                primaryResp
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+
+        val remoteResults = response?.results ?: emptyList()
+        val savedMap = _savedGamesMap.value
+
+        return remoteResults.map { dto ->
+            val existingSaved = savedMap[dto.id]
+            existingSaved
+                ?: Game(
+                    id = dto.id,
+                    title = dto.name,
+                    coverUrl = dto.backgroundImage,
+                    backgroundUrl = dto.backgroundImage,
+                    releaseDate = dto.released,
+                    platforms = dto.platforms?.map { it.platform.name } ?: listOf("PlayStation"),
+                    genres = dto.genres?.map { it.name } ?: emptyList(),
+                    rawgRating = dto.rating ?: 0.0,
+                    averagePlaytime = dto.playtime ?: 0
+                )
         }
     }
 

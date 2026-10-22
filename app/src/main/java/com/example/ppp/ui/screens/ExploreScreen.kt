@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,8 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
@@ -80,13 +77,11 @@ fun ExploreScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val recentSearches by viewModel.recentSearches.collectAsState()
     val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
     val exploreState by viewModel.exploreState.collectAsState()
-    val selectedGenre by viewModel.selectedGenre.collectAsState()
     val filteredGames by viewModel.filteredExploreGames.collectAsState()
 
-    LaunchedEffect(searchQuery, selectedSortOrder, selectedGenre) {
+    LaunchedEffect(searchQuery, selectedSortOrder) {
         listState.scrollToItem(0)
     }
 
@@ -122,112 +117,20 @@ fun ExploreScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             item {
-                ExploreHeader()
-            }
-
-            // Recent Searches Row (shown when search is empty and user has recent searches)
-            if (searchQuery.isBlank() && recentSearches.isNotEmpty()) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.History,
-                                    contentDescription = null,
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "Recent Searches",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextSecondary
-                                )
-                            }
-                            Text(
-                                text = "Clear",
-                                fontSize = 11.sp,
-                                color = PlayStationLightBlue,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.clickable { viewModel.clearRecentSearches() }
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            recentSearches.forEach { searchItem ->
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .clickable { viewModel.onSearchQueryChanged(searchItem) }
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = searchItem,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.title_explore),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Genre Filter Chips Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        viewModel.availableGenres.forEach { genre ->
-                            val isSelected = selectedGenre == genre
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    viewModel.setSelectedGenre(genre)
-                                },
-                                label = {
-                                    Text(
-                                        text = genre,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PlayStationLightBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    labelColor = TextSecondary
-                                )
-                            )
-                        }
-                    }
-
-                    SortRow(
-                        searchQuery = searchQuery,
-                        selected = selectedSortOrder,
-                        onSelected = viewModel::onSortOrderChanged
-                    )
-                }
+                SortRow(
+                    searchQuery = searchQuery,
+                    selected = selectedSortOrder,
+                    onSelected = viewModel::onSortOrderChanged
+                )
             }
 
             when (val state = exploreState) {
@@ -389,23 +292,6 @@ fun ExploreScreen(
 }
 
 @Composable
-private fun ExploreHeader() {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            text = stringResource(R.string.title_explore),
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = stringResource(R.string.subtitle_explore),
-            fontSize = 14.sp,
-            color = TextSecondary
-        )
-    }
-}
-
-@Composable
 private fun SortRow(
     searchQuery: String,
     selected: GameSortOrder,
@@ -417,7 +303,8 @@ private fun SortRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (searchQuery.isBlank()) stringResource(R.string.all_games) else "${stringResource(R.string.results_for)} \"$searchQuery\"",
+            text = if (searchQuery.isBlank()) stringResource(R.string.all_games)
+            else "${stringResource(R.string.results_for)} \"$searchQuery\"",
             fontSize = 13.sp,
             color = TextSecondary,
             maxLines = 1,

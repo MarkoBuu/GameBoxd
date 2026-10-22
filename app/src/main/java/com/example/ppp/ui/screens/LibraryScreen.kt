@@ -92,6 +92,7 @@ fun LibraryScreen(
     val showPlatinumsOnly by viewModel.showPlatinumsOnly.collectAsState()
     val selectedYearFilter by viewModel.selectedYearFilter.collectAsState()
     val selectedRatingFilter by viewModel.selectedRatingFilter.collectAsState()
+    val selectedGenre by viewModel.selectedGenre.collectAsState()
     val availableYears by viewModel.availableYears.collectAsState()
     val searchQuery by viewModel.librarySearchQuery.collectAsState()
     val filteredGames by viewModel.filteredLibraryGames.collectAsState()
@@ -109,6 +110,7 @@ fun LibraryScreen(
     val activeFilterTags = mutableListOf<String>()
     if (showPlatinumsOnly) activeFilterTags.add("🏆")
     if (showFavoritesOnly) activeFilterTags.add("❤️")
+    if (selectedGenre != "All") activeFilterTags.add(selectedGenre)
     selectedYearFilter?.let { activeFilterTags.add("$it") }
     selectedRatingFilter?.let { r ->
         val formatted = if (r % 1f == 0f) "${r.toInt()}★" else "$r★"
@@ -123,7 +125,8 @@ fun LibraryScreen(
         showFavoritesOnly,
         showPlatinumsOnly,
         selectedYearFilter,
-        selectedRatingFilter
+        selectedRatingFilter,
+        selectedGenre
     ) {
         listState.scrollToItem(0)
     }
@@ -353,6 +356,7 @@ fun LibraryScreen(
                             onClick = {
                                 if (showFavoritesOnly) viewModel.toggleFavoritesFilter()
                                 if (showPlatinumsOnly) viewModel.togglePlatinumsFilter()
+                                viewModel.setSelectedGenre("All")
                                 viewModel.setSelectedYearFilter(null)
                                 viewModel.setSelectedRatingFilter(null)
                             }
@@ -458,6 +462,44 @@ fun LibraryScreen(
                                     )
                                 )
                             }
+                        }
+                    }
+                }
+
+                // Filter By Genre Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Genre",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        viewModel.availableGenres.forEach { genre ->
+                            val isSelected = selectedGenre == genre
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.setSelectedGenre(genre) },
+                                label = {
+                                    Text(
+                                        text = genre,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PlayStationLightBlue,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = TextSecondary
+                                )
+                            )
                         }
                     }
                 }
