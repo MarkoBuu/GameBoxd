@@ -180,7 +180,7 @@ fun GameCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (game.userRating > 0f) {
-                        RatingStars(rating = game.userRating)
+                        UserRatingStars(rating = game.userRating)
                     } else {
                         Text(
                             text = stringResource(R.string.rawg_rating_format, game.rawgRating),

@@ -136,7 +136,7 @@ class GameViewModel(
             .filter { !favOnly || it.isFavorite }
             .filter { !platOnly || it.hasPlatinum }
             .filter { yearFilter == null || it.completionYear == yearFilter }
-            .filter { ratingFilter == null || kotlin.math.abs(it.userRating - ratingFilter) < 0.01f }
+            .filter { ratingFilter == null || it.userRating >= ratingFilter }
             .filter { genre == "All" || it.genres.any { g -> g.equals(genre, ignoreCase = true) } }
             .filter {
                 if (queryTokens.isEmpty()) true
