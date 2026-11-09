@@ -66,12 +66,6 @@ import com.example.ppp.ui.theme.TextSecondary
 import com.example.ppp.ui.viewmodel.GameViewModel
 import kotlinx.coroutines.launch
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Explore : Screen("explore", "Explore", Icons.Default.Explore)
-    object Library : Screen("library", "Library", Icons.Default.VideogameAsset)
-    object Stats : Screen("stats", "Stats", Icons.Default.BarChart)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainNavigation(
