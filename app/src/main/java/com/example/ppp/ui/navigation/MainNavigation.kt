@@ -111,7 +111,10 @@ fun MainNavigation(
         if (lastRoute != currentRoute) {
             isSearchActive = false
             when (lastRoute) {
-                Screen.Explore.route -> viewModel.onSearchQueryChanged("")
+                Screen.Explore.route -> {
+                    viewModel.onSearchQueryChanged("")
+                    viewModel.dismissServiceStatus()
+                }
                 Screen.Library.route -> viewModel.onLibrarySearchChanged("")
             }
             lastRoute = currentRoute
