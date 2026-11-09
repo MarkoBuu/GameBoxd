@@ -109,13 +109,9 @@ fun StatsScreen(
     val averageScore: Float? = if (ratedGames.isNotEmpty()) {
         ratedGames.map { it.userRating }.average().toFloat()
     } else null
-    val ratingBuckets = (1..10).map { score ->
-        val count = ratedGames.count { g ->
-            if (score == 10) g.userRating >= 9.5f
-            else if (score == 1) g.userRating < 1.5f
-            else g.userRating >= (score - 0.5f) && g.userRating < (score + 0.5f)
-        }
-        score to count
+    val ratingBuckets = (1..10).map { step ->
+        val value = step / 2f
+        value to ratedGames.count { (it.userRating * 2).roundToInt().coerceIn(1, 10) == step }
     }
     val maxBucket = ratingBuckets.maxOfOrNull { it.second } ?: 0
     val topRated = ratedGames.maxByOrNull { it.userRating }
@@ -259,6 +255,7 @@ fun StatsScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                            val showHalfLabels = maxWidth >= 300.dp
                             val maxBarHeight = 48.dp
 
                             Row(
@@ -267,6 +264,7 @@ fun StatsScreen(
                                 verticalAlignment = Alignment.Bottom
                             ) {
                                 ratingBuckets.forEach { (value, count) ->
+                                    val isWhole = value % 1f == 0f
                                     val fraction =
                                         if (maxBucket > 0) count / maxBucket.toFloat() else 0f
                                     val barHeight = if (count == 0) 2.dp
@@ -305,7 +303,11 @@ fun StatsScreen(
                                                             )
                                                         )
                                                         .background(
-                                                            if (count == 0) MaterialTheme.colorScheme.surfaceVariant else AccentGold
+                                                            when {
+                                                                count == 0 -> MaterialTheme.colorScheme.surfaceVariant
+                                                                isWhole -> AccentGold
+                                                                else -> AccentGold.copy(alpha = 0.55f)
+                                                            }
                                                         )
                                                 )
                                             }
@@ -313,7 +315,11 @@ fun StatsScreen(
 
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "$value",
+                                            text = when {
+                                                isWhole -> "${value.toInt()}"
+                                                showHalfLabels -> "$value"
+                                                else -> ""
+                                            },
                                             fontSize = 10.sp,
                                             color = TextSecondary,
                                             maxLines = 1,

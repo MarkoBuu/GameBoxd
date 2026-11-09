@@ -69,8 +69,8 @@
     <string name="release_date_format">Release Date: %1$s</string>
     <string name="release_date_na">N/A</string>
     <string name="close_content_description">Close</string>
-    <string name="year_completed_label">Year Completed</string>
-    <string name="year_dropped_label">Year Dropped</string>
+    <string name="year_completed_label">Year Completed:</string>
+    <string name="year_dropped_label">Year Dropped:</string>
     <string name="community_avg_playtime_format">Community Avg Playtime: %1$dh</string>
     <string name="favorite_content_desc">Favorite</string>
 

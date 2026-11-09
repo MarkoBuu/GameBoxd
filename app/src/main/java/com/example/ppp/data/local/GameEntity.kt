@@ -35,7 +35,6 @@ data class GameEntity(
 ) {
     fun toGame(): Game {
         val status = try { PlayStatus.valueOf(playStatus) } catch (_: Exception) { PlayStatus.NONE }
-        val scaledRating = if (userRating in 0.1f..5.0f) userRating * 2f else userRating
         return Game(
             id = id,
             title = title,
@@ -45,7 +44,7 @@ data class GameEntity(
             platforms = if (platforms.isBlank()) emptyList() else platforms.split(","),
             genres = if (genres.isBlank()) emptyList() else genres.split(","),
             rawgRating = rawgRating,
-            userRating = scaledRating,
+            userRating = userRating,
             playStatus = status,
             reviewText = reviewText,
             hasPlatinum = hasPlatinum,

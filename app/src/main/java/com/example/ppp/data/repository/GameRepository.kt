@@ -143,7 +143,7 @@ class GameRepository(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             if (_serviceStatus.value == null) {
                 _serviceStatus.value = ServiceStatus(
                     isOutage = true,

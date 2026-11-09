@@ -442,12 +442,13 @@ fun LibraryScreen(
                                     labelColor = TextSecondary
                                 )
                             )
-                            val ratingOptions = listOf(9.0f, 8.0f, 7.0f, 6.0f, 5.0f)
+                            val ratingOptions =
+                                listOf(5.0f, 4.5f, 4.0f, 3.5f, 3.0f, 2.5f, 2.0f, 1.5f, 1.0f)
                             ratingOptions.forEach { r ->
                                 val isSelected = selectedRatingFilter?.let {
-                                    kotlin.math.abs(it - r) < 0.05f
+                                    kotlin.math.abs(it - r) < 0.01f
                                 } ?: false
-                                val labelText = "${r.toInt()}.0+ ★"
+                                val labelText = if (r % 1f == 0f) "${r.toInt()}.0 ★" else "$r ★"
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = { viewModel.setSelectedRatingFilter(if (isSelected) null else r) },

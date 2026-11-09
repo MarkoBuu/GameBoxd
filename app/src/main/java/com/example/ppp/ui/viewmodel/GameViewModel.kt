@@ -88,20 +88,7 @@ class GameViewModel(
     private val _selectedLibrarySort = MutableStateFlow(LibrarySortOption.RECENTLY_UPDATED)
     val selectedLibrarySort: StateFlow<LibrarySortOption> = _selectedLibrarySort.asStateFlow()
 
-    val availableGenres = listOf(
-        "All",
-        "Action",
-        "RPG",
-        "Adventure",
-        "Shooter",
-        "Indie",
-        "Strategy",
-        "Platformer",
-        "Puzzle",
-        "Sports",
-        "Racing",
-        "Fighting"
-    )
+    val availableGenres = listOf("All", "Action", "RPG", "Adventure", "Shooter", "Indie", "Strategy", "Platformer", "Puzzle", "Sports", "Racing", "Fighting")
 
     val availableYears: StateFlow<List<Int>> = savedGames.map { list ->
         list.mapNotNull { it.completionYear }.distinct().sortedDescending()
@@ -156,7 +143,7 @@ class GameViewModel(
             .filter { !favOnly || it.isFavorite }
             .filter { !platOnly || it.hasPlatinum }
             .filter { yearFilter == null || it.completionYear == yearFilter }
-            .filter { ratingFilter == null || it.userRating >= ratingFilter }
+            .filter { ratingFilter == null || kotlin.math.abs(it.userRating - ratingFilter) < 0.01f }
             .filter { genre == "All" || it.genres.any { g -> g.equals(genre, ignoreCase = true) } }
             .filter {
                 if (queryTokens.isEmpty()) true
@@ -193,12 +180,6 @@ class GameViewModel(
         viewModelScope.launch {
             savedGames.collect { saved -> remergeExploreGames(saved) }
         }
-    }
-
-    companion object {
-        // Replace this URL with your raw GitHub Gist URL
-        private const val REMOTE_STATUS_URL =
-            "https://gist.githubusercontent.com/MarkoBuu/03eed1fe1e372dbdfcaf86bea7997f0b/raw/2e77fe0fc5bd3b74a9dd61c1f7f3beeab0812b30/gameboxd_status.json"
     }
 
     fun toggleTheme() {
@@ -443,5 +424,10 @@ class GameViewModel(
                 isPageLoading = false
             }
         }
+    }
+
+    companion object {
+        // Replace this URL with your raw GitHub Gist URL
+        private const val REMOTE_STATUS_URL = ""
     }
 }

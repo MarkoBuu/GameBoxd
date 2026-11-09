@@ -198,7 +198,7 @@ suspend fun generateReviewCardBitmap(
         isAntiAlias = true
     }
 
-    val starsString = "★ ${if (rating > 0f) String.format(java.util.Locale.US, "%.1f", rating) else "Unrated"}"
+    val starsString = buildStarRatingString(rating)
     canvas.drawText(starsString, 70f, ratingTop + 45f, ratingTextPaint)
 
     val scorePaint = TextPaint().apply {
@@ -207,9 +207,9 @@ suspend fun generateReviewCardBitmap(
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         isAntiAlias = true
     }
-    val ratingValStr = if (rating > 0f) "/ 10.0" else ""
+    val ratingValStr = if (rating > 0f) "${String.format("%.1f", rating)} / 5.0" else "Unrated"
     val starsWidth = ratingTextPaint.measureText(starsString)
-    canvas.drawText(ratingValStr, 70f + starsWidth + 16f, ratingTop + 40f, scorePaint)
+    canvas.drawText(ratingValStr, 70f + starsWidth + 24f, ratingTop + 40f, scorePaint)
 
     if (playtimeHours > 0) {
         val timePaint = TextPaint().apply {
@@ -294,6 +294,19 @@ suspend fun generateReviewCardBitmap(
     bitmap
 }
 
+private fun buildStarRatingString(rating: Float): String {
+    if (rating <= 0f) return "☆☆☆☆☆"
+    val fullStars = rating.toInt()
+    val hasHalf = (rating - fullStars) >= 0.25f
+    val emptyStars = 5 - fullStars - (if (hasHalf) 1 else 0)
+
+    val sb = StringBuilder()
+    repeat(fullStars) { sb.append("★") }
+    if (hasHalf) sb.append("½")
+    repeat(emptyStars) { sb.append("☆") }
+    return sb.toString()
+}
+
 private fun getRoundedCornerBitmap(bitmap: Bitmap, pixels: Float, width: Int, height: Int): Bitmap {
     val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
     val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -347,7 +360,7 @@ suspend fun shareReviewCardImage(
             file
         )
 
-        val stars = if (rating > 0f) "${String.format(java.util.Locale.US, "%.1f", rating)} / 10.0 ★" else "Unrated"
+        val stars = if (rating > 0f) "${String.format("%.1f", rating)} / 5.0 ★" else "Unrated"
         val shareText = "🎮 ${game.title} - $stars on GameBoxd"
 
         val sendIntent = Intent().apply {
