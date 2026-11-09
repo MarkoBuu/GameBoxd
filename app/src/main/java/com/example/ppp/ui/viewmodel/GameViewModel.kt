@@ -7,6 +7,7 @@ import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.LibrarySortOption
 import com.example.ppp.data.model.PlayStatus
+import com.example.ppp.data.model.ServiceStatus
 import com.example.ppp.data.repository.GameRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -66,6 +67,12 @@ class GameViewModel(
     private val _exploreState = MutableStateFlow<ExploreUiState>(ExploreUiState.Loading)
     val exploreState: StateFlow<ExploreUiState> = _exploreState.asStateFlow()
 
+    val serviceStatus: StateFlow<ServiceStatus?> = repository.serviceStatusFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     private val _selectedGameForRating = MutableStateFlow<Game?>(null)
     val selectedGameForRating: StateFlow<Game?> = _selectedGameForRating.asStateFlow()
 
@@ -81,7 +88,20 @@ class GameViewModel(
     private val _selectedLibrarySort = MutableStateFlow(LibrarySortOption.RECENTLY_UPDATED)
     val selectedLibrarySort: StateFlow<LibrarySortOption> = _selectedLibrarySort.asStateFlow()
 
-    val availableGenres = listOf("All", "Action", "RPG", "Adventure", "Shooter", "Indie", "Strategy", "Platformer", "Puzzle", "Sports", "Racing", "Fighting")
+    val availableGenres = listOf(
+        "All",
+        "Action",
+        "RPG",
+        "Adventure",
+        "Shooter",
+        "Indie",
+        "Strategy",
+        "Platformer",
+        "Puzzle",
+        "Sports",
+        "Racing",
+        "Fighting"
+    )
 
     val availableYears: StateFlow<List<Int>> = savedGames.map { list ->
         list.mapNotNull { it.completionYear }.distinct().sortedDescending()
@@ -167,13 +187,32 @@ class GameViewModel(
 
     init {
         fetchInitialPage()
+        if (REMOTE_STATUS_URL.isNotBlank()) {
+            checkRemoteStatus(REMOTE_STATUS_URL)
+        }
         viewModelScope.launch {
             savedGames.collect { saved -> remergeExploreGames(saved) }
         }
     }
 
+    companion object {
+        // Replace this URL with your raw GitHub Gist URL
+        private const val REMOTE_STATUS_URL =
+            "https://gist.githubusercontent.com/MarkoBuu/03eed1fe1e372dbdfcaf86bea7997f0b/raw/2e77fe0fc5bd3b74a9dd61c1f7f3beeab0812b30/gameboxd_status.json"
+    }
+
     fun toggleTheme() {
         _isDarkTheme.value = !_isDarkTheme.value
+    }
+
+    fun checkRemoteStatus(url: String) {
+        viewModelScope.launch {
+            repository.checkRemoteStatus(url)
+        }
+    }
+
+    fun dismissServiceStatus() {
+        repository.dismissServiceStatus()
     }
 
     fun toggleFavoritesFilter() {

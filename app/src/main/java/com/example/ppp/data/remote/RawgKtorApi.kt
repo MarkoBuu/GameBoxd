@@ -1,5 +1,6 @@
 package com.example.ppp.data.remote
 
+import com.example.ppp.data.model.ServiceStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -71,6 +72,10 @@ class RawgKtorApi(
                 parameter("ordering", ordering)
             }
         }.body()
+    }
+
+    suspend fun fetchServiceStatus(statusUrl: String): ServiceStatus {
+        return client.get(statusUrl).body()
     }
 
     companion object {

@@ -6,6 +6,7 @@ import com.example.ppp.data.local.GameEntity
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.PlayStatus
+import com.example.ppp.data.model.ServiceStatus
 import com.example.ppp.data.remote.RawgKtorApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,9 @@ class GameRepository(
     private val _savedGamesMap = MutableStateFlow<Map<Int, Game>>(emptyMap())
     private val _savedGames = MutableStateFlow<List<Game>>(emptyList())
     val savedGamesFlow: StateFlow<List<Game>> = _savedGames.asStateFlow()
+
+    private val _serviceStatus = MutableStateFlow<ServiceStatus?>(null)
+    val serviceStatusFlow: StateFlow<ServiceStatus?> = _serviceStatus.asStateFlow()
 
     init {
         val initialSavedList = gameDao.getAllSavedGames().map { it.toGame() }
@@ -139,7 +143,14 @@ class GameRepository(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (_serviceStatus.value == null) {
+                _serviceStatus.value = ServiceStatus(
+                    isOutage = true,
+                    message = "RAWG API is currently unreachable. Search results may be unavailable.",
+                    severity = "warning"
+                )
+            }
             null
         }
 
@@ -161,6 +172,20 @@ class GameRepository(
                     averagePlaytime = dto.playtime ?: 0
                 )
         }
+    }
+
+    suspend fun checkRemoteStatus(statusUrl: String): ServiceStatus? {
+        return try {
+            val status = ktorApi.fetchServiceStatus(statusUrl)
+            _serviceStatus.value = status
+            status
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun dismissServiceStatus() {
+        _serviceStatus.value = null
     }
 
     fun matchesToken(titleLower: String, token: String): Boolean {

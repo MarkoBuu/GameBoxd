@@ -1,6 +1,8 @@
 package com.example.ppp.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -54,6 +56,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ppp.R
+import com.example.ppp.ui.components.ServerStatusBanner
 import com.example.ppp.ui.screens.ExploreScreen
 import com.example.ppp.ui.screens.GameDetailDialog
 import com.example.ppp.ui.screens.LibraryScreen
@@ -80,6 +83,7 @@ fun MainNavigation(
 
     val selectedGameForRating by viewModel.selectedGameForRating.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val serviceStatus by viewModel.serviceStatus.collectAsState()
 
     val exploreListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -232,28 +236,40 @@ fun MainNavigation(
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Explore.route,
-            modifier = Modifier.padding(paddingValues)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            composable(Screen.Explore.route) {
-                ExploreScreen(
-                    viewModel = viewModel,
-                    listState = exploreListState
+            serviceStatus?.let { status ->
+                ServerStatusBanner(
+                    status = status,
+                    onDismiss = { viewModel.dismissServiceStatus() }
                 )
             }
-            composable(Screen.Library.route) {
-                LibraryScreen(
-                    viewModel = viewModel,
-                    listState = libraryListState
-                )
-            }
-            composable(Screen.Stats.route) {
-                StatsScreen(
-                    viewModel = viewModel,
-                    scrollState = statsListState
-                )
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Explore.route,
+                modifier = Modifier.weight(1f)
+            ) {
+                composable(Screen.Explore.route) {
+                    ExploreScreen(
+                        viewModel = viewModel,
+                        listState = exploreListState
+                    )
+                }
+                composable(Screen.Library.route) {
+                    LibraryScreen(
+                        viewModel = viewModel,
+                        listState = libraryListState
+                    )
+                }
+                composable(Screen.Stats.route) {
+                    StatsScreen(
+                        viewModel = viewModel,
+                        scrollState = statsListState
+                    )
+                }
             }
         }
     }
