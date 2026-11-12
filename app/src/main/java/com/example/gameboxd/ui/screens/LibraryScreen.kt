@@ -67,8 +67,8 @@ import androidx.compose.ui.unit.sp
 import com.example.gameboxd.R
 import com.example.gameboxd.data.model.LibrarySortOption
 import com.example.gameboxd.data.model.PlayStatus
-import com.example.gameboxd.ui.components.GameCard
 import com.example.gameboxd.ui.components.CustomDropdown
+import com.example.gameboxd.ui.components.GameCard
 import com.example.gameboxd.ui.theme.AccentGold
 import com.example.gameboxd.ui.theme.FavoritesRed
 import com.example.gameboxd.ui.theme.PlayStationLightBlue
@@ -199,7 +199,7 @@ fun LibraryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(horizontalScrollState),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
