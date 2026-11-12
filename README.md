@@ -8,11 +8,9 @@
 
 - **Explore & Discover**: Browse trending, popular, and top-rated games powered by the **IGDB (Internet Game Database) API**. Search across thousands of titles with advanced filtering and sorting options.
 - **Personal Game Library**: Organize your collection into various lists:
-  - Currently Playing
   - Completed
-  - Backlog / Plan to Play
-  - Wishlist
-  - Dropped & Custom Statuses
+  - Backlog
+  - Dropped 
 - **Detailed Game Views**: View high-resolution cover art, screenshots, release dates, genres, developer info, summaries, and community/critic ratings.
 - **Logging & Reviews**: Log your gameplay sessions, record personal ratings (with star ratings), write reviews, and track play status.
 - **Shareable Review Cards**: Generate beautiful, shareable review summary cards for your favorite games.
