@@ -1,5 +1,8 @@
 package com.example.ppp.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.example.ppp.R
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -75,7 +78,7 @@ fun ServerStatusBanner(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Dismiss",
+                        contentDescription = stringResource(R.string.cd_dismiss),
                         tint = contentColor
                     )
                 }

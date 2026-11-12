@@ -99,7 +99,7 @@
     <string name="btn_restore_json">Restore from JSON</string>
     <string name="paste_json_label">Paste JSON to Restore Data</string>
     <string name="toast_json_copied">Library JSON copied to clipboard!</string>
-    <string name="toast_data_restored">Data restored successfully!</string>
+    <string name="toast_import_summary">Restored: %1$d new, %2$d updated, %3$d kept (newer on this device)</string>
     <string name="toast_invalid_json">Invalid JSON format!</string>
     <string name="btn_close">Close</string>
     <string name="rated_count_label">%1$d rated</string>
@@ -115,8 +115,32 @@
     <string name="retry_connection">Retry Connection</string>
     <string name="toggle_theme">Toggle Light/Dark Theme</string>
 
+    <!-- Explore filters & offline state -->
+    <string name="offline_title">Offline / Connection Failed</string>
+    <string name="offline_message">Could not fetch games from the network. Your saved games and library are still fully accessible offline!</string>
+    <string name="filter_platform">Platform</string>
+    <string name="filter_genre">Genre</string>
+
+    <!-- Relink (fix match) -->
+    <string name="btn_fix_match">Wrong game? Fix match</string>
+    <string name="fix_match_title">Fix match</string>
+    <string name="fix_match_hint">Search for the correct game. Your rating, review and status are kept.</string>
+    <string name="fix_match_search_label">Search IGDB</string>
+    <string name="fix_match_no_results">No results</string>
+    <string name="fix_match_done">Match updated</string>
+    <string name="fix_match_conflict">That game is already in your library</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_refresh_games">Refresh games</string>
+    <string name="cd_scroll_to_top">Scroll to top</string>
+    <string name="cd_close_search">Close search</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="cd_dismiss">Dismiss</string>
+    <string name="filter_favorites">Favorites</string>
+
     <!-- Game Card -->
-    <string name="rawg_rating_format">RAWG Rating: %1$.1f/5</string>
+    <string name="igdb_rating_format">IGDB Rating: %1$.1f/5</string>
     <string name="hours_played_card_format">Hours played: %1$dh</string>
     <string name="rating_stars_content_description">Star %1$d</string>
 </resources>

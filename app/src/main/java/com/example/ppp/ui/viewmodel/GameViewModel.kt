@@ -3,12 +3,17 @@ package com.example.ppp.ui.viewmodel
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ppp.data.model.ExploreGenre
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.LibrarySortOption
+import com.example.ppp.data.model.PlatformFilter
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.data.model.ServiceStatus
 import com.example.ppp.data.repository.GameRepository
+import com.example.ppp.data.repository.ImportResult
+import com.example.ppp.data.repository.matchesToken
+import com.example.ppp.data.repository.relinkedTo
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +68,18 @@ class GameViewModel(
 
     private val _selectedGenre = MutableStateFlow("All")
     val selectedGenre: StateFlow<String> = _selectedGenre.asStateFlow()
+
+    private val _explorePlatform = MutableStateFlow(PlatformFilter.ALL)
+    val explorePlatform: StateFlow<PlatformFilter> = _explorePlatform.asStateFlow()
+
+    private val _exploreGenre = MutableStateFlow(ExploreGenre.ALL)
+    val exploreGenre: StateFlow<ExploreGenre> = _exploreGenre.asStateFlow()
+
+    private val _relinkResults = MutableStateFlow<List<Game>>(emptyList())
+    val relinkResults: StateFlow<List<Game>> = _relinkResults.asStateFlow()
+
+    private val _relinkLoading = MutableStateFlow(false)
+    val relinkLoading: StateFlow<Boolean> = _relinkLoading.asStateFlow()
 
     private val _exploreState = MutableStateFlow<ExploreUiState>(ExploreUiState.Loading)
     val exploreState: StateFlow<ExploreUiState> = _exploreState.asStateFlow()
@@ -149,7 +166,7 @@ class GameViewModel(
                 if (queryTokens.isEmpty()) true
                 else {
                     val titleLower = it.title.lowercase()
-                    queryTokens.all { token -> repository.matchesToken(titleLower, token) }
+                    queryTokens.all { token -> matchesToken(titleLower, token) }
                 }
             }
             .toList()
@@ -173,6 +190,7 @@ class GameViewModel(
     private var searchDebounceJob: Job? = null
 
     init {
+        viewModelScope.launch { repository.migrateLegacyRawgIds() }
         fetchInitialPage()
         if (REMOTE_STATUS_URL.isNotBlank()) {
             checkRemoteStatus(REMOTE_STATUS_URL)
@@ -196,6 +214,11 @@ class GameViewModel(
         repository.dismissServiceStatus()
     }
 
+    fun retryFetch() {
+        dismissServiceStatus()
+        fetchInitialPage()
+    }
+
     fun toggleFavoritesFilter() {
         _showFavoritesOnly.value = !_showFavoritesOnly.value
     }
@@ -215,7 +238,7 @@ class GameViewModel(
     fun toggleFavorite(game: Game) {
         // Only COMPLETED games can be added to favorites
         if (game.playStatus == PlayStatus.COMPLETED) {
-            repository.toggleFavorite(game)
+            viewModelScope.launch { repository.toggleFavorite(game) }
         }
     }
 
@@ -223,38 +246,39 @@ class GameViewModel(
         _selectedGenre.value = genre
     }
 
-    private fun remergeExploreGames(saved: List<Game>) {
+    private suspend fun remergeExploreGames(saved: List<Game>) {
         val state = _exploreState.value
         if (state !is ExploreUiState.Success) return
 
         val savedMap = saved.associateBy { it.id }
-        _exploreState.value = state.copy(
-            games = currentGamesList
-                .map { game ->
-                    val existingSaved = savedMap[game.id]
-                    if (existingSaved != null) {
-                        if (existingSaved.genres.isEmpty() && game.genres.isNotEmpty()) {
-                            val enriched = existingSaved.copy(genres = game.genres)
-                            repository.saveGameRating(
-                                game = enriched,
-                                userRating = enriched.userRating,
-                                status = enriched.playStatus,
-                                reviewText = enriched.reviewText,
-                                hasPlatinum = enriched.hasPlatinum,
-                                playtimeHours = enriched.playtimeHours,
-                                isFavorite = enriched.isFavorite,
-                                completionYear = enriched.completionYear
-                            )
-                            enriched
-                        } else {
-                            existingSaved
-                        }
-                    } else {
-                        game
+        val enrichedGames = mutableListOf<Game>()
+        val merged = currentGamesList
+            .map { game ->
+                val existingSaved = savedMap[game.id]
+                when {
+                    existingSaved == null -> game
+                    existingSaved.genres.isEmpty() && game.genres.isNotEmpty() -> {
+                        existingSaved.copy(genres = game.genres).also { enrichedGames += it }
                     }
+                    else -> existingSaved
                 }
-                .distinctBy { it.id }
-        )
+            }
+            .distinctBy { it.id }
+        _exploreState.value = state.copy(games = merged)
+
+        // Backfill genres on games saved before genres were stored; the next emission sees them filled.
+        enrichedGames.forEach { enriched ->
+            repository.saveGameRating(
+                game = enriched,
+                userRating = enriched.userRating,
+                status = enriched.playStatus,
+                reviewText = enriched.reviewText,
+                hasPlatinum = enriched.hasPlatinum,
+                playtimeHours = enriched.playtimeHours,
+                isFavorite = enriched.isFavorite,
+                completionYear = enriched.completionYear
+            )
+        }
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -262,6 +286,20 @@ class GameViewModel(
         searchDebounceJob?.cancel()
         searchDebounceJob = viewModelScope.launch {
             delay(400.milliseconds) // Debounce search input
+            fetchInitialPage()
+        }
+    }
+
+    fun onPlatformFilterChanged(platform: PlatformFilter) {
+        if (_explorePlatform.value != platform) {
+            _explorePlatform.value = platform
+            fetchInitialPage()
+        }
+    }
+
+    fun onExploreGenreChanged(genre: ExploreGenre) {
+        if (_exploreGenre.value != genre) {
+            _exploreGenre.value = genre
             fetchInitialPage()
         }
     }
@@ -286,8 +324,63 @@ class GameViewModel(
     }
 
     fun openRatingDialog(game: Game) {
-        val existing = repository.getGameById(game.id)
-        _selectedGameForRating.value = existing ?: game
+        viewModelScope.launch {
+            val opened = repository.getGameById(game.id) ?: game
+            _selectedGameForRating.value = opened
+            if (opened.averagePlaytime == 0) loadAveragePlaytime(opened)
+        }
+    }
+
+    /** Fetches IGDB's typical time to beat in the background and shows it once it arrives. */
+    private suspend fun loadAveragePlaytime(game: Game) {
+        val hours = repository.fetchAveragePlaytimeHours(game.id)
+        if (hours <= 0) return
+        repository.cacheAveragePlaytime(game.id, hours)
+        val current = _selectedGameForRating.value
+        // Skip if the dialog was closed or moved on to another game while the request ran.
+        if (current != null && current.id == game.id) {
+            _selectedGameForRating.value = current.copy(averagePlaytime = hours)
+        }
+    }
+
+    fun searchForRelink(query: String) {
+        relinkJob?.cancel()
+        if (query.isBlank()) {
+            _relinkResults.value = emptyList()
+            _relinkLoading.value = false
+            return
+        }
+        relinkJob = viewModelScope.launch {
+            delay(400.milliseconds)
+            _relinkLoading.value = true
+            try {
+                _relinkResults.value = repository.fetchPlayStationGames(query = query, page = 1)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _relinkResults.value = emptyList()
+            } finally {
+                _relinkLoading.value = false
+            }
+        }
+    }
+
+    fun clearRelinkSearch() {
+        relinkJob?.cancel()
+        _relinkResults.value = emptyList()
+        _relinkLoading.value = false
+    }
+
+    /** Moves a saved game onto another IGDB entry. [onResult] receives false if that entry is already saved. */
+    fun relinkGame(old: Game, target: Game, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = repository.relinkGame(old, target)
+            if (success) {
+                _selectedGameForRating.value = old.relinkedTo(target)
+                clearRelinkSearch()
+            }
+            onResult(success)
+        }
     }
 
     fun closeRatingDialog() {
@@ -315,30 +408,38 @@ class GameViewModel(
         val effectiveHours = if (isBacklog) 0 else playtimeHours
         val effectiveYear = if (isBacklog) null else completionYear
 
-        repository.saveGameRating(
-            game = game,
-            userRating = effectiveRating,
-            status = status,
-            reviewText = effectiveReview,
-            hasPlatinum = effectivePlatinum,
-            playtimeHours = effectiveHours,
-            isFavorite = effectiveFavorite,
-            completionYear = effectiveYear
-        )
         closeRatingDialog()
+        viewModelScope.launch {
+            repository.saveGameRating(
+                game = game,
+                userRating = effectiveRating,
+                status = status,
+                reviewText = effectiveReview,
+                hasPlatinum = effectivePlatinum,
+                playtimeHours = effectiveHours,
+                isFavorite = effectiveFavorite,
+                completionYear = effectiveYear
+            )
+        }
     }
 
     fun removeGame(gameId: Int) {
-        repository.removeGameFromLibrary(gameId)
         closeRatingDialog()
+        viewModelScope.launch { repository.removeGameFromLibrary(gameId) }
     }
 
-    fun exportDataJson(): String {
-        return repository.exportLibraryJson()
+    fun exportDataJson(onReady: (String) -> Unit) {
+        viewModelScope.launch { onReady(repository.exportLibraryJson()) }
     }
 
-    fun importDataJson(jsonString: String): Boolean {
-        return repository.importLibraryJson(jsonString)
+    /** Merges a backup into the library; [onResult] gets the merge summary, or null for an invalid backup. */
+    fun importDataJson(jsonString: String, onResult: (ImportResult?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.importLibraryJson(jsonString)
+            onResult(result)
+            // Old backups carry pre-IGDB ids, so re-run the title re-match in the background.
+            if (result != null) repository.migrateLegacyRawgIds()
+        }
     }
 
     fun loadNextPage() {
@@ -356,7 +457,9 @@ class GameViewModel(
                 val newGames = repository.fetchPlayStationGames(
                     query = _searchQuery.value,
                     page = nextPage,
-                    sortOrder = _selectedSortOrder.value
+                    sortOrder = _selectedSortOrder.value,
+                    platform = _explorePlatform.value,
+                    genre = _exploreGenre.value
                 )
 
                 if (newGames.isEmpty()) {
@@ -388,6 +491,7 @@ class GameViewModel(
     }
 
     private var fetchJob: Job? = null
+    private var relinkJob: Job? = null
 
     private fun fetchInitialPage() {
         fetchJob?.cancel()
@@ -402,7 +506,9 @@ class GameViewModel(
                 val games = repository.fetchPlayStationGames(
                     query = _searchQuery.value,
                     page = 1,
-                    sortOrder = _selectedSortOrder.value
+                    sortOrder = _selectedSortOrder.value,
+                    platform = _explorePlatform.value,
+                    genre = _exploreGenre.value
                 )
                 val uniqueGames = games.distinctBy { it.id }
                 currentGamesList.addAll(uniqueGames)

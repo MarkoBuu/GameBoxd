@@ -124,7 +124,7 @@ fun StatsScreen(
     } else null
 
     val toastJsonCopied = stringResource(R.string.toast_json_copied)
-    val toastDataRestored = stringResource(R.string.toast_data_restored)
+    val toastImportSummary = stringResource(R.string.toast_import_summary)
     val toastInvalidJson = stringResource(R.string.toast_invalid_json)
 
     val showScrollToTop by remember {
@@ -420,7 +420,7 @@ fun StatsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = "Scroll to top"
+                    contentDescription = stringResource(R.string.cd_scroll_to_top)
                 )
             }
         }
@@ -450,13 +450,14 @@ fun StatsScreen(
 
                     Button(
                         onClick = {
-                            val json = viewModel.exportDataJson()
-                            clipboardManager.setText(AnnotatedString(json))
-                            Toast.makeText(
-                                context,
-                                toastJsonCopied,
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            viewModel.exportDataJson { json ->
+                                clipboardManager.setText(AnnotatedString(json))
+                                Toast.makeText(
+                                    context,
+                                    toastJsonCopied,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = PlayStationLightBlue)
@@ -488,20 +489,25 @@ fun StatsScreen(
                     Button(
                         onClick = {
                             if (importJsonText.isNotBlank()) {
-                                val success = viewModel.importDataJson(importJsonText)
-                                if (success) {
-                                    Toast.makeText(
-                                        context,
-                                        toastDataRestored,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    showBackupDialog = false
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        toastInvalidJson,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                viewModel.importDataJson(importJsonText) { result ->
+                                    if (result != null) {
+                                        Toast.makeText(
+                                            context,
+                                            toastImportSummary.format(
+                                                result.added,
+                                                result.updated,
+                                                result.skipped
+                                            ),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        showBackupDialog = false
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            toastInvalidJson,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             }
                         },

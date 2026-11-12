@@ -101,7 +101,7 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                         releaseDate = c.getString(releaseIdx),
                         platforms = platforms,
                         genres = genres,
-                        rawgRating = c.getDouble(rawgIdx),
+                        igdbRating = c.getDouble(rawgIdx),
                         userRating = c.getFloat(userIdx),
                         playStatus = status,
                         reviewText = c.getString(reviewIdx),
@@ -128,7 +128,7 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put(COLUMN_RELEASE_DATE, game.releaseDate)
             put(COLUMN_PLATFORMS, game.platforms.joinToString(","))
             put(COLUMN_GENRES, game.genres.joinToString(","))
-            put(COLUMN_RAWG_RATING, game.rawgRating)
+            put(COLUMN_RAWG_RATING, game.igdbRating)
             put(COLUMN_USER_RATING, game.userRating)
             put(COLUMN_PLAY_STATUS, game.playStatus.name)
             put(COLUMN_REVIEW_TEXT, game.reviewText)
@@ -155,7 +155,7 @@ class LocalGameDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                         put(COLUMN_RELEASE_DATE, game.releaseDate)
                         put(COLUMN_PLATFORMS, game.platforms.joinToString(","))
                         put(COLUMN_GENRES, game.genres.joinToString(","))
-                        put(COLUMN_RAWG_RATING, game.rawgRating)
+                        put(COLUMN_RAWG_RATING, game.igdbRating)
                         put(COLUMN_USER_RATING, game.userRating)
                         put(COLUMN_PLAY_STATUS, game.playStatus.name)
                         put(COLUMN_REVIEW_TEXT, game.reviewText)
