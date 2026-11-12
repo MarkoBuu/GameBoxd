@@ -62,7 +62,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.ppp.R
 import com.example.ppp.data.model.PlayStatus
-import com.example.ppp.ui.components.SortDropdown
+import com.example.ppp.ui.components.SortOrFilterDropdown
 import com.example.ppp.ui.theme.AccentGold
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
@@ -151,7 +151,7 @@ fun StatsScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
-                SortDropdown(
+                SortOrFilterDropdown(
                     showText = false,
                     options = yearOptions,
                     selected = selectedStatsYear,

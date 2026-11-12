@@ -68,7 +68,7 @@ import com.example.ppp.R
 import com.example.ppp.data.model.LibrarySortOption
 import com.example.ppp.data.model.PlayStatus
 import com.example.ppp.ui.components.GameCard
-import com.example.ppp.ui.components.SortDropdown
+import com.example.ppp.ui.components.SortOrFilterDropdown
 import com.example.ppp.ui.theme.AccentGold
 import com.example.ppp.ui.theme.FavoritesRed
 import com.example.ppp.ui.theme.PlayStationLightBlue
@@ -147,19 +147,12 @@ fun LibraryScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.title_library),
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = stringResource(R.string.subtitle_library),
-                        fontSize = 14.sp,
-                        color = TextSecondary
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.title_library),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             // Primary Status Tabs (Completed, Backlog, Dropped)
@@ -225,12 +218,13 @@ fun LibraryScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Filter By: ",
+                                    text = stringResource(R.string.filter_by),
                                     fontSize = 13.sp,
                                     color = TextSecondary
                                 )
                                 Text(
-                                    text = if (hasActiveFilters) activeFilterTags.joinToString(" · ") else "Default",
+                                    text = if (hasActiveFilters) activeFilterTags.joinToString(" · ")
+                                    else stringResource(R.string.default_string),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PlayStationLightBlue,
@@ -246,7 +240,7 @@ fun LibraryScreen(
                             }
                         }
 
-                        SortDropdown(
+                        SortOrFilterDropdown(
                             options = LibrarySortOption.entries,
                             selected = selectedSort,
                             optionLabel = { stringResource(it.displayNameRes) },
@@ -387,7 +381,12 @@ fun LibraryScreen(
                             FilterChip(
                                 selected = showFavoritesOnly,
                                 onClick = { viewModel.toggleFavoritesFilter() },
-                                label = { Text(stringResource(R.string.filter_favorites), fontSize = 12.sp) },
+                                label = {
+                                    Text(
+                                        stringResource(R.string.filter_favorites),
+                                        fontSize = 12.sp
+                                    )
+                                },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = FavoritesRed,
@@ -399,7 +398,12 @@ fun LibraryScreen(
                             FilterChip(
                                 selected = showPlatinumsOnly,
                                 onClick = { viewModel.togglePlatinumsFilter() },
-                                label = { Text(stringResource(R.string.platinum_trophy), fontSize = 12.sp) },
+                                label = {
+                                    Text(
+                                        stringResource(R.string.platinum_trophy),
+                                        fontSize = 12.sp
+                                    )
+                                },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = AccentGold,

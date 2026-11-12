@@ -26,18 +26,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -59,11 +54,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ppp.R
-import com.example.ppp.data.model.ExploreGenre
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.PlatformFilter
 import com.example.ppp.ui.components.GameCard
-import com.example.ppp.ui.components.SortDropdown
+import com.example.ppp.ui.components.SortOrFilterDropdown
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
 import com.example.ppp.ui.viewmodel.ExploreUiState
@@ -84,9 +78,8 @@ fun ExploreScreen(
     val exploreState by viewModel.exploreState.collectAsState()
     val filteredGames by viewModel.filteredExploreGames.collectAsState()
     val selectedPlatform by viewModel.explorePlatform.collectAsState()
-    val selectedGenre by viewModel.exploreGenre.collectAsState()
 
-    LaunchedEffect(searchQuery, selectedSortOrder, selectedPlatform, selectedGenre) {
+    LaunchedEffect(searchQuery, selectedSortOrder, selectedPlatform) {
         listState.scrollToItem(0)
     }
 
@@ -115,53 +108,29 @@ fun ExploreScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.title_explore),
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    if (exploreState !is ExploreUiState.Loading) {
-                        IconButton(onClick = { viewModel.retryFetch() }) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.cd_refresh_games),
-                                tint = PlayStationLightBlue
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.title_explore),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             item {
                 SortRow(
                     searchQuery = searchQuery,
                     selected = selectedSortOrder,
-                    onSelected = viewModel::onSortOrderChanged
+                    onSelected = viewModel::onSortOrderChanged,
+                    selectedPlatform = selectedPlatform,
+                    onPlatformSelected = viewModel::onPlatformFilterChanged,
                 )
-            }
-
-            if (searchQuery.isBlank()) {
-                item {
-                    ExploreFilterRows(
-                        selectedPlatform = selectedPlatform,
-                        selectedGenre = selectedGenre,
-                        onPlatformSelected = viewModel::onPlatformFilterChanged,
-                        onGenreSelected = viewModel::onExploreGenreChanged
-                    )
-                }
             }
 
             when (val state = exploreState) {
@@ -286,7 +255,10 @@ fun ExploreScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = PlayStationLightBlue),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text(stringResource(R.string.retry_connection), fontWeight = FontWeight.Bold)
+                                    Text(
+                                        stringResource(R.string.retry_connection),
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -323,51 +295,12 @@ fun ExploreScreen(
 }
 
 @Composable
-private fun ExploreFilterRows(
-    selectedPlatform: PlatformFilter,
-    selectedGenre: ExploreGenre,
-    onPlatformSelected: (PlatformFilter) -> Unit,
-    onGenreSelected: (ExploreGenre) -> Unit
-) {
-    val chipColors = FilterChipDefaults.filterChipColors(
-        selectedContainerColor = PlayStationLightBlue,
-        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            PlatformFilter.entries.forEach { platform ->
-                FilterChip(
-                    selected = platform == selectedPlatform,
-                    onClick = { onPlatformSelected(platform) },
-                    label = { Text(platform.label, fontSize = 12.sp) },
-                    colors = chipColors
-                )
-            }
-        }
-        /*Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ExploreGenre.entries.forEach { genre ->
-                FilterChip(
-                    selected = genre == selectedGenre,
-                    onClick = { onGenreSelected(genre) },
-                    label = { Text(genre.label, fontSize = 12.sp) },
-                    colors = chipColors
-                )
-            }
-        }*/
-    }
-}
-
-@Composable
 private fun SortRow(
     searchQuery: String,
     selected: GameSortOrder,
-    onSelected: (GameSortOrder) -> Unit
+    onSelected: (GameSortOrder) -> Unit,
+    selectedPlatform: PlatformFilter,
+    onPlatformSelected: (PlatformFilter) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -375,7 +308,7 @@ private fun SortRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (searchQuery.isBlank()) stringResource(R.string.all_games)
+            text = if (searchQuery.isBlank()) ""
             else "${stringResource(R.string.results_for)} \"$searchQuery\"",
             fontSize = 13.sp,
             color = TextSecondary,
@@ -386,11 +319,25 @@ private fun SortRow(
                 .padding(end = 12.dp)
         )
         if (searchQuery.isBlank())
-            SortDropdown(
-                options = GameSortOrder.entries,
-                selected = selected,
-                optionLabel = { it.displayName },
-                onSelected = onSelected
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SortOrFilterDropdown(
+                    text = stringResource(R.string.filter_by),
+                    options = PlatformFilter.entries,
+                    selected = selectedPlatform,
+                    optionLabel = { it.label },
+                    onSelected = onPlatformSelected
+                )
+                SortOrFilterDropdown(
+                    options = GameSortOrder.entries,
+                    selected = selected,
+                    optionLabel = { it.displayName },
+                    onSelected = onSelected
+                )
+            }
     }
 }

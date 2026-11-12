@@ -21,11 +21,12 @@
     <!-- Search & Filter -->
     <string name="search_placeholder_explore">Search all games…</string>
     <string name="search_placeholder_library">Search your library…</string>
-    <string name="sort_by">Sort By: </string>
+    <string name="sort_by">Sort By:</string>
     <string name="results_count_one"> game</string>
     <string name="results_count_many"> games</string>
     <string name="results_for">Results for </string>
     <string name="all_games">All games</string>
+    <string name="filter_by">Filter By:</string>
     <string name="filter_all_years">All Years</string>
     <string name="filter_options">Filter Options</string>
     <string name="reset_filter">Reset Filters</string>
@@ -35,6 +36,7 @@
     <string name="completion_year">Completion Year</string>
     <string name="year_dropped">Year Dropped</string>
     <string name="apply_filters">Apply Filters</string>
+    <string name="default_string">Default</string>
 
     <!-- Sort Options -->
     <string name="sort_top_rated">Top Rated</string>

@@ -3,7 +3,6 @@ package com.example.ppp.ui.viewmodel
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.ppp.data.model.ExploreGenre
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.GameSortOrder
 import com.example.ppp.data.model.LibrarySortOption
@@ -72,9 +71,6 @@ class GameViewModel(
     private val _explorePlatform = MutableStateFlow(PlatformFilter.ALL)
     val explorePlatform: StateFlow<PlatformFilter> = _explorePlatform.asStateFlow()
 
-    private val _exploreGenre = MutableStateFlow(ExploreGenre.ALL)
-    val exploreGenre: StateFlow<ExploreGenre> = _exploreGenre.asStateFlow()
-
     private val _relinkResults = MutableStateFlow<List<Game>>(emptyList())
     val relinkResults: StateFlow<List<Game>> = _relinkResults.asStateFlow()
 
@@ -105,7 +101,20 @@ class GameViewModel(
     private val _selectedLibrarySort = MutableStateFlow(LibrarySortOption.RECENTLY_UPDATED)
     val selectedLibrarySort: StateFlow<LibrarySortOption> = _selectedLibrarySort.asStateFlow()
 
-    val availableGenres = listOf("All", "Action", "RPG", "Adventure", "Shooter", "Indie", "Strategy", "Platformer", "Puzzle", "Sports", "Racing", "Fighting")
+    val availableGenres = listOf(
+        "All",
+        "Action",
+        "RPG",
+        "Adventure",
+        "Shooter",
+        "Indie",
+        "Strategy",
+        "Platformer",
+        "Puzzle",
+        "Sports",
+        "Racing",
+        "Fighting"
+    )
 
     val availableYears: StateFlow<List<Int>> = savedGames.map { list ->
         list.mapNotNull { it.completionYear }.distinct().sortedDescending()
@@ -260,6 +269,7 @@ class GameViewModel(
                     existingSaved.genres.isEmpty() && game.genres.isNotEmpty() -> {
                         existingSaved.copy(genres = game.genres).also { enrichedGames += it }
                     }
+
                     else -> existingSaved
                 }
             }
@@ -293,13 +303,6 @@ class GameViewModel(
     fun onPlatformFilterChanged(platform: PlatformFilter) {
         if (_explorePlatform.value != platform) {
             _explorePlatform.value = platform
-            fetchInitialPage()
-        }
-    }
-
-    fun onExploreGenreChanged(genre: ExploreGenre) {
-        if (_exploreGenre.value != genre) {
-            _exploreGenre.value = genre
             fetchInitialPage()
         }
     }
@@ -459,7 +462,6 @@ class GameViewModel(
                     page = nextPage,
                     sortOrder = _selectedSortOrder.value,
                     platform = _explorePlatform.value,
-                    genre = _exploreGenre.value
                 )
 
                 if (newGames.isEmpty()) {
@@ -508,7 +510,6 @@ class GameViewModel(
                     page = 1,
                     sortOrder = _selectedSortOrder.value,
                     platform = _explorePlatform.value,
-                    genre = _exploreGenre.value
                 )
                 val uniqueGames = games.distinctBy { it.id }
                 currentGamesList.addAll(uniqueGames)

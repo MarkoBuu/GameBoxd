@@ -24,19 +24,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ppp.R
 import com.example.ppp.ui.theme.PlayStationLightBlue
 import com.example.ppp.ui.theme.TextSecondary
 
 @Composable
-fun <T> SortDropdown(
+fun <T> SortOrFilterDropdown(
     showText: Boolean = true,
     options: List<T>,
     selected: T,
     optionLabel: @Composable (T) -> String,
-    onSelected: (T) -> Unit
+    onSelected: (T) -> Unit,
+    text: String = stringResource(R.string.sort_by)
 ) {
     var expanded by remember { mutableStateOf(false) }
     val arrowRotation by animateFloatAsState(
@@ -55,7 +58,7 @@ fun <T> SortDropdown(
         ) {
             if (showText) {
                 Text(
-                    text = "Sort By: ",
+                    text = "$text ",
                     fontSize = 13.sp,
                     color = TextSecondary
                 )
