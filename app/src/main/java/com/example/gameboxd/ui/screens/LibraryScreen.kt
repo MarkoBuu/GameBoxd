@@ -194,7 +194,7 @@ fun LibraryScreen(
 
             // Compact Bar: Filter Box + SortDropdown
             item {
-                AnimatedVisibility(selectedTab != PlayStatus.BACKLOG) {
+                AnimatedVisibility(selectedTab != PlayStatus.BACKLOG && filteredGames.isNotEmpty()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
