@@ -12,7 +12,6 @@ import com.example.gameboxd.data.remote.IgdbKtorApi
 import com.example.gameboxd.data.repository.GameRepository
 import com.example.gameboxd.ui.viewmodel.GameViewModel
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
@@ -40,5 +39,5 @@ val appModule = module {
     }
     single<TransactionRunner> { RoomTransactionRunner(get<AppDatabase>()) }
     single { GameRepository(get(), get(), get(), get()) }
-    viewModel { GameViewModel(get()) }
+    single { GameViewModel(get()) }
 }
