@@ -436,7 +436,7 @@ fun StatsScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -446,8 +446,7 @@ fun StatsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             viewModel.exportDataJson { json ->
@@ -465,8 +464,7 @@ fun StatsScreen(
                         Text(stringResource(R.string.btn_copy_json))
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = importJsonText,
                         onValueChange = { importJsonText = it },
@@ -484,45 +482,46 @@ fun StatsScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            if (importJsonText.isNotBlank()) {
-                                viewModel.importDataJson(importJsonText) { result ->
-                                    if (result != null) {
-                                        Toast.makeText(
-                                            context,
-                                            toastImportSummary.format(
-                                                result.added,
-                                                result.updated,
-                                                result.skipped
-                                            ),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        showBackupDialog = false
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            toastInvalidJson,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AnimatedVisibility(importJsonText.isNotEmpty()) {
+                        Button(
+                            onClick = {
+                                if (importJsonText.isNotBlank()) {
+                                    viewModel.importDataJson(importJsonText) { result ->
+                                        if (result != null) {
+                                            Toast.makeText(
+                                                context,
+                                                toastImportSummary.format(
+                                                    result.added,
+                                                    result.updated,
+                                                    result.skipped
+                                                ),
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            showBackupDialog = false
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                toastInvalidJson,
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentGold)
-                    ) {
-                        Text(
-                            stringResource(R.string.btn_restore_json),
-                            color = MaterialTheme.colorScheme.surface,
-                            fontWeight = FontWeight.Bold
-                        )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentGold)
+                        ) {
+                            Text(
+                                stringResource(R.string.btn_restore_json),
+                                color = MaterialTheme.colorScheme.surface,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
-
                     OutlinedButton(
                         onClick = { showBackupDialog = false },
                         modifier = Modifier.fillMaxWidth()
