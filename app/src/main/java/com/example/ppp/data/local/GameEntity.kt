@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.ppp.data.model.Game
 import com.example.ppp.data.model.PlayStatus
+import com.example.ppp.data.model.playStationOnly
 
 @Entity(
     tableName = "saved_games",
@@ -22,7 +23,7 @@ data class GameEntity(
     @ColumnInfo(name = "release_date") val releaseDate: String? = null,
     @ColumnInfo(name = "platforms") val platforms: String = "",
     @ColumnInfo(name = "genres") val genres: String = "",
-    @ColumnInfo(name = "rawg_rating") val rawgRating: Double = 0.0,
+    @ColumnInfo(name = "rawg_rating") val igdbRating: Double = 0.0,
     @ColumnInfo(name = "user_rating") val userRating: Float = 0f,
     @ColumnInfo(name = "play_status") val playStatus: String = PlayStatus.NONE.name,
     @ColumnInfo(name = "review_text") val reviewText: String = "",
@@ -41,9 +42,9 @@ data class GameEntity(
             coverUrl = coverUrl,
             backgroundUrl = backgroundUrl,
             releaseDate = releaseDate,
-            platforms = if (platforms.isBlank()) emptyList() else platforms.split(","),
+            platforms = platforms.split(",").playStationOnly(),
             genres = if (genres.isBlank()) emptyList() else genres.split(","),
-            rawgRating = rawgRating,
+            igdbRating = igdbRating,
             userRating = userRating,
             playStatus = status,
             reviewText = reviewText,
@@ -66,7 +67,7 @@ data class GameEntity(
                 releaseDate = game.releaseDate,
                 platforms = game.platforms.joinToString(","),
                 genres = game.genres.joinToString(","),
-                rawgRating = game.rawgRating,
+                igdbRating = game.igdbRating,
                 userRating = game.userRating,
                 playStatus = game.playStatus.name,
                 reviewText = game.reviewText,

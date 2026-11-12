@@ -239,7 +239,7 @@ fun LibraryScreen(
                                 )
                                 Icon(
                                     imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filter Options",
+                                    contentDescription = stringResource(R.string.filter_options),
                                     tint = PlayStationLightBlue,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -319,7 +319,7 @@ fun LibraryScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = "Scroll to top"
+                    contentDescription = stringResource(R.string.cd_scroll_to_top)
                 )
             }
         }
@@ -387,7 +387,7 @@ fun LibraryScreen(
                             FilterChip(
                                 selected = showFavoritesOnly,
                                 onClick = { viewModel.toggleFavoritesFilter() },
-                                label = { Text("Favorites", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.filter_favorites), fontSize = 12.sp) },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = FavoritesRed,
@@ -399,7 +399,7 @@ fun LibraryScreen(
                             FilterChip(
                                 selected = showPlatinumsOnly,
                                 onClick = { viewModel.togglePlatinumsFilter() },
-                                label = { Text("Platinum Trophy", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.platinum_trophy), fontSize = 12.sp) },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = AccentGold,

@@ -10,6 +10,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun gameDao(): GameDao
 
     companion object {
+        /** Schema versions from before migrations were maintained; these can only be reset. */
+        val UNMIGRATABLE_VERSIONS = intArrayOf(1, 2, 3, 4)
+
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE saved_games RENAME TO saved_games_old")

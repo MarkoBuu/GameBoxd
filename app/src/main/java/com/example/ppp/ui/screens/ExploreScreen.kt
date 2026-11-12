@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,7 +59,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ppp.R
+import com.example.ppp.data.model.ExploreGenre
 import com.example.ppp.data.model.GameSortOrder
+import com.example.ppp.data.model.PlatformFilter
 import com.example.ppp.ui.components.GameCard
 import com.example.ppp.ui.components.SortDropdown
 import com.example.ppp.ui.theme.PlayStationLightBlue
@@ -80,8 +83,10 @@ fun ExploreScreen(
     val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
     val exploreState by viewModel.exploreState.collectAsState()
     val filteredGames by viewModel.filteredExploreGames.collectAsState()
+    val selectedPlatform by viewModel.explorePlatform.collectAsState()
+    val selectedGenre by viewModel.exploreGenre.collectAsState()
 
-    LaunchedEffect(searchQuery, selectedSortOrder) {
+    LaunchedEffect(searchQuery, selectedSortOrder, selectedPlatform, selectedGenre) {
         listState.scrollToItem(0)
     }
 
@@ -117,12 +122,27 @@ fun ExploreScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             item {
-                Text(
-                    text = stringResource(R.string.title_explore),
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.title_explore),
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (exploreState !is ExploreUiState.Loading) {
+                        IconButton(onClick = { viewModel.retryFetch() }) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.cd_refresh_games),
+                                tint = PlayStationLightBlue
+                            )
+                        }
+                    }
+                }
             }
 
             item {
@@ -131,6 +151,17 @@ fun ExploreScreen(
                     selected = selectedSortOrder,
                     onSelected = viewModel::onSortOrderChanged
                 )
+            }
+
+            if (searchQuery.isBlank()) {
+                item {
+                    ExploreFilterRows(
+                        selectedPlatform = selectedPlatform,
+                        selectedGenre = selectedGenre,
+                        onPlatformSelected = viewModel::onPlatformFilterChanged,
+                        onGenreSelected = viewModel::onExploreGenreChanged
+                    )
+                }
             }
 
             when (val state = exploreState) {
@@ -160,7 +191,7 @@ fun ExploreScreen(
                                     text = if (searchQuery.isBlank()) {
                                         stringResource(R.string.no_games_found)
                                     } else {
-                                        "No games found for '$searchQuery'. Check spelling or try another title!"
+                                        stringResource(R.string.no_games_found_for, searchQuery)
                                     },
                                     color = TextSecondary,
                                     fontSize = 14.sp
@@ -206,7 +237,7 @@ fun ExploreScreen(
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                "Load More Games",
+                                                stringResource(R.string.load_more_games),
                                                 color = PlayStationLightBlue,
                                                 fontSize = 12.sp
                                             )
@@ -239,23 +270,23 @@ fun ExploreScreen(
                                     modifier = Modifier.size(36.dp)
                                 )
                                 Text(
-                                    text = "Offline / Connection Failed",
+                                    text = stringResource(R.string.offline_title),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Could not fetch games from network. Your saved games and library are still fully accessible offline!",
+                                    text = stringResource(R.string.offline_message),
                                     fontSize = 13.sp,
                                     color = TextSecondary,
                                     textAlign = TextAlign.Center
                                 )
                                 Button(
-                                    onClick = { viewModel.onSearchQueryChanged(searchQuery) },
+                                    onClick = { viewModel.retryFetch() },
                                     colors = ButtonDefaults.buttonColors(containerColor = PlayStationLightBlue),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text("Retry Connection", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.retry_connection), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -284,10 +315,51 @@ fun ExploreScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = "Scroll to top"
+                    contentDescription = stringResource(R.string.cd_scroll_to_top)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ExploreFilterRows(
+    selectedPlatform: PlatformFilter,
+    selectedGenre: ExploreGenre,
+    onPlatformSelected: (PlatformFilter) -> Unit,
+    onGenreSelected: (ExploreGenre) -> Unit
+) {
+    val chipColors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = PlayStationLightBlue,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PlatformFilter.entries.forEach { platform ->
+                FilterChip(
+                    selected = platform == selectedPlatform,
+                    onClick = { onPlatformSelected(platform) },
+                    label = { Text(platform.label, fontSize = 12.sp) },
+                    colors = chipColors
+                )
+            }
+        }
+        /*Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ExploreGenre.entries.forEach { genre ->
+                FilterChip(
+                    selected = genre == selectedGenre,
+                    onClick = { onGenreSelected(genre) },
+                    label = { Text(genre.label, fontSize = 12.sp) },
+                    colors = chipColors
+                )
+            }
+        }*/
     }
 }
 

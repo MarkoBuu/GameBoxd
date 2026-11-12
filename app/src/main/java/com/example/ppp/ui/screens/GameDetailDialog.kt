@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -49,8 +52,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +86,91 @@ import com.example.ppp.ui.theme.TextSecondary
 import com.example.ppp.ui.utils.shareReviewCardImage
 import kotlinx.coroutines.launch
 
+private const val MIN_VALID_YEAR = 2000
+
+@Composable
+private fun FixMatchDialog(
+    initialQuery: String,
+    results: List<Game>,
+    loading: Boolean,
+    onSearch: (String) -> Unit,
+    onSelect: (Game) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var query by remember { mutableStateOf(initialQuery) }
+    // Start from the current title so the right entry is usually already in the list.
+    LaunchedEffect(Unit) { onSearch(initialQuery) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.fix_match_title), fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.fix_match_hint),
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = {
+                        query = it
+                        onSearch(it)
+                    },
+                    label = { Text(stringResource(R.string.fix_match_search_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 80.dp, max = 280.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        loading -> CircularProgressIndicator(color = PlayStationLightBlue)
+                        results.isEmpty() -> Text(
+                            text = stringResource(R.string.fix_match_no_results),
+                            color = TextSecondary,
+                            fontSize = 13.sp
+                        )
+                        else -> LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(results, key = { it.id }) { candidate ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(candidate) }
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = candidate.title,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = listOfNotNull(
+                                            candidate.releaseDate?.take(4),
+                                            candidate.platforms.joinToString(", ")
+                                        ).joinToString(" • "),
+                                        color = TextSecondary,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.btn_cancel)) }
+        }
+    )
+}
+
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -87,7 +178,12 @@ fun GameDetailDialog(
     game: Game,
     onDismiss: () -> Unit,
     onSaveRating: (game: Game, rating: Float, status: PlayStatus, review: String, hasPlatinum: Boolean, playtimeHours: Int, isFavorite: Boolean, completionYear: Int?) -> Unit,
-    onRemove: (gameId: Int) -> Unit
+    onRemove: (gameId: Int) -> Unit,
+    relinkResults: List<Game> = emptyList(),
+    relinkLoading: Boolean = false,
+    onRelinkSearch: (String) -> Unit = {},
+    onRelinkSelect: (target: Game, onResult: (Boolean) -> Unit) -> Unit = { _, _ -> },
+    onRelinkDismiss: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val isAlreadySaved = game.playStatus != PlayStatus.NONE
@@ -98,7 +194,9 @@ fun GameDetailDialog(
     val initialPlatinum = game.hasPlatinum
     val initialPlaytimeInput = if (game.playtimeHours > 0) game.playtimeHours.toString() else ""
     val initialFavorite = game.isFavorite && initialStatus == PlayStatus.COMPLETED
-    val initialYearInput = game.completionYear?.toString() ?: ""
+    val currentYear = remember { java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) }
+    val initialYearInput =
+        game.completionYear?.takeIf { it > 0 }?.toString() ?: currentYear.toString()
 
     var userRating by remember { mutableFloatStateOf(initialRating) }
     var selectedStatus by remember { mutableStateOf(initialStatus) }
@@ -107,8 +205,8 @@ fun GameDetailDialog(
     var playtimeInput by remember { mutableStateOf(initialPlaytimeInput) }
     var isFavorite by remember { mutableStateOf(initialFavorite) }
     var yearInput by remember { mutableStateOf(initialYearInput) }
-    val currentYear = remember { java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showFixMatchDialog by remember { mutableStateOf(false) }
 
     val platinumEnabled = selectedStatus == PlayStatus.COMPLETED
     val detailsEnabled = selectedStatus != PlayStatus.BACKLOG
@@ -123,7 +221,11 @@ fun GameDetailDialog(
     val effectiveFavorite = isFavorite && isCompleted
     val effectiveReview = if (isCompleted && effectiveRating > 0f) reviewText else ""
     val effectiveHours = if (detailsEnabled) playtimeInput else ""
-    val effectiveYear = if (detailsEnabled && yearInput.length == 4) yearInput.toIntOrNull()?.takeIf { it in 2000..currentYear } else null
+    val effectiveYear = if (detailsEnabled) {
+        yearInput.toIntOrNull()?.takeIf { it in MIN_VALID_YEAR..currentYear } ?: currentYear
+    } else {
+        null
+    }
 
     val hasChanges = userRating != initialRating ||
             selectedStatus != initialStatus ||
@@ -133,8 +235,10 @@ fun GameDetailDialog(
             effectiveFavorite != initialFavorite ||
             effectiveYear != game.completionYear
 
-    val isButtonEnabled = (!isAlreadySaved || hasChanges) && (selectedStatus != PlayStatus.COMPLETED || effectiveRating > 0f)
-    val buttonText = if (isAlreadySaved) stringResource(R.string.btn_update_entry) else stringResource(R.string.btn_add_to_library)
+    val isButtonEnabled = (!isAlreadySaved || hasChanges)
+            && (selectedStatus != PlayStatus.COMPLETED || effectiveRating > 0f)
+    val buttonText = if (isAlreadySaved) stringResource(R.string.btn_update_entry)
+    else stringResource(R.string.btn_add_to_library)
 
     val statusOptions = listOf(
         PlayStatus.COMPLETED,
@@ -162,10 +266,41 @@ fun GameDetailDialog(
         }
     }
 
+    val fixMatchDoneText = stringResource(R.string.fix_match_done)
+    val fixMatchConflictText = stringResource(R.string.fix_match_conflict)
+    val screenContext = LocalContext.current
+    if (showFixMatchDialog) {
+        FixMatchDialog(
+            initialQuery = game.title,
+            results = relinkResults,
+            loading = relinkLoading,
+            onSearch = onRelinkSearch,
+            onSelect = { target ->
+                onRelinkSelect(target) { success ->
+                    Toast.makeText(
+                        screenContext,
+                        if (success) fixMatchDoneText else fixMatchConflictText,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    if (success) showFixMatchDialog = false
+                }
+            },
+            onDismiss = {
+                showFixMatchDialog = false
+                onRelinkDismiss()
+            }
+        )
+    }
+
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text(stringResource(R.string.remove_game_title), fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    stringResource(R.string.remove_game_title),
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = { Text(stringResource(R.string.remove_game_confirm, game.title)) },
             confirmButton = {
                 Button(
@@ -261,7 +396,8 @@ fun GameDetailDialog(
                                     .size(36.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    imageVector = if (isFavorite) Icons.Default.Favorite
+                                    else Icons.Default.FavoriteBorder,
                                     contentDescription = stringResource(R.string.favorite_content_desc),
                                     tint = if (isFavorite) Color(0xFFFF4081) else Color.White
                                 )
@@ -328,7 +464,10 @@ fun GameDetailDialog(
                                 maxLines = 2
                             )
                             Text(
-                                text = stringResource(R.string.release_date_format, game.releaseDate ?: stringResource(R.string.release_date_na)),
+                                text = stringResource(
+                                    R.string.release_date_format,
+                                    game.releaseDate ?: stringResource(R.string.release_date_na)
+                                ),
                                 fontSize = 12.sp,
                                 color = Color.LightGray
                             )
@@ -344,7 +483,10 @@ fun GameDetailDialog(
                 ) {
                     if (game.genres.isNotEmpty()) {
                         FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                6.dp,
+                                Alignment.CenterHorizontally
+                            ),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -408,7 +550,9 @@ fun GameDetailDialog(
                                 onValueChange = { input ->
                                     if (input.isEmpty()) {
                                         yearInput = input
-                                    } else if (input.length <= 4 && input.all { it.isDigit() } && input.startsWith("2")) {
+                                    } else if (input.length <= 4 && input.all { it.isDigit() } && input.startsWith(
+                                            "2"
+                                        )) {
                                         val minYearForPrefix = input.padEnd(4, '0').toIntOrNull()
                                         if (minYearForPrefix != null && minYearForPrefix <= currentYear) {
                                             yearInput = input
@@ -417,7 +561,9 @@ fun GameDetailDialog(
                                 },
                                 label = {
                                     Text(
-                                        text = if (selectedStatus == PlayStatus.COMPLETED) stringResource(R.string.year_completed_label) else stringResource(R.string.year_dropped_label),
+                                        text = if (selectedStatus == PlayStatus.COMPLETED) stringResource(
+                                            R.string.year_completed_label
+                                        ) else stringResource(R.string.year_dropped_label),
                                         color = TextSecondary
                                     )
                                 },
@@ -491,7 +637,12 @@ fun GameDetailDialog(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = if (effectiveRating > 0f) "${String.format("%.1f", effectiveRating)} / 5.0" else stringResource(R.string.tap_stars_to_rate),
+                                    text = if (effectiveRating > 0f) "${
+                                        String.format(
+                                            "%.1f",
+                                            effectiveRating
+                                        )
+                                    } / 5.0" else stringResource(R.string.tap_stars_to_rate),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AccentGold
@@ -523,7 +674,12 @@ fun GameDetailDialog(
                                         playtimeInput = input
                                     }
                                 },
-                                label = { Text(stringResource(R.string.hours_played), color = TextSecondary) },
+                                label = {
+                                    Text(
+                                        stringResource(R.string.hours_played),
+                                        color = TextSecondary
+                                    )
+                                },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
@@ -536,7 +692,10 @@ fun GameDetailDialog(
                             if (game.averagePlaytime > 0) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = stringResource(R.string.community_avg_playtime_format, game.averagePlaytime),
+                                    text = stringResource(
+                                        R.string.community_avg_playtime_format,
+                                        game.averagePlaytime
+                                    ),
                                     fontSize = 11.sp,
                                     color = PlayStationLightBlue,
                                     fontWeight = FontWeight.Medium
@@ -557,7 +716,12 @@ fun GameDetailDialog(
                                 value = if (isReviewAllowed) reviewText else "",
                                 onValueChange = { if (isReviewAllowed) reviewText = it },
                                 enabled = isReviewAllowed,
-                                label = { Text(stringResource(R.string.write_review_label), color = TextSecondary) },
+                                label = {
+                                    Text(
+                                        stringResource(R.string.write_review_label),
+                                        color = TextSecondary
+                                    )
+                                },
                                 supportingText = {
                                     if (!isReviewAllowed) {
                                         Text(
@@ -572,7 +736,9 @@ fun GameDetailDialog(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = PlayStationLightBlue,
                                     unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                                        alpha = 0.5f
+                                    ),
                                     disabledLabelColor = TextSecondary.copy(alpha = 0.5f)
                                 )
                             )
@@ -599,7 +765,9 @@ fun GameDetailDialog(
                             ).show()
                         },
                         enabled = isButtonEnabled,
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PlayStationLightBlue,
@@ -651,6 +819,16 @@ fun GameDetailDialog(
                             )
                         ) {
                             Text(text = stringResource(R.string.btn_remove_from_library))
+                        }
+                        TextButton(
+                            onClick = { showFixMatchDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_fix_match),
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }

@@ -78,6 +78,8 @@ fun MainNavigation(
     val selectedGameForRating by viewModel.selectedGameForRating.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
     val serviceStatus by viewModel.serviceStatus.collectAsState()
+    val relinkResults by viewModel.relinkResults.collectAsState()
+    val relinkLoading by viewModel.relinkLoading.collectAsState()
 
     val exploreListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -134,13 +136,13 @@ fun MainNavigation(
                         IconButton(onClick = ::closeSearch) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Close search"
+                                contentDescription = stringResource(R.string.cd_close_search)
                             )
                         }
                     } else {
                         Icon(
                             painter = painterResource(R.drawable.ic_controller_logo),
-                            contentDescription = "GameBoxd",
+                            contentDescription = stringResource(R.string.app_name),
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -150,20 +152,20 @@ fun MainNavigation(
                         if (currentRoute == Screen.Explore.route) {
                             TopBarSearchField(
                                 query = exploreQuery,
-                                placeholder = "Search all games…",
+                                placeholder = stringResource(R.string.search_placeholder_explore),
                                 onQueryChange = viewModel::onSearchQueryChanged,
                                 onClose = ::closeSearch
                             )
                         } else if (currentRoute == Screen.Library.route) {
                             TopBarSearchField(
                                 query = libraryQuery,
-                                placeholder = "Search your library…",
+                                placeholder = stringResource(R.string.search_placeholder_library),
                                 onQueryChange = viewModel::onLibrarySearchChanged,
                                 onClose = ::closeSearch
                             )
                         }
                     } else {
-                        Text("GameBoxd")
+                        Text(stringResource(R.string.app_name))
                     }
                 },
                 actions = {
@@ -172,7 +174,7 @@ fun MainNavigation(
                             IconButton(onClick = { isSearchActive = true }) {
                                 Icon(
                                     Icons.Default.Search,
-                                    contentDescription = "Search",
+                                    contentDescription = stringResource(R.string.cd_search),
                                     tint = if (isDarkTheme) Color.White else Color.Black
                                 )
                             }
@@ -279,7 +281,12 @@ fun MainNavigation(
             },
             onRemove = { id ->
                 viewModel.removeGame(id)
-            }
+            },
+            relinkResults = relinkResults,
+            relinkLoading = relinkLoading,
+            onRelinkSearch = viewModel::searchForRelink,
+            onRelinkSelect = { target, onResult -> viewModel.relinkGame(game, target, onResult) },
+            onRelinkDismiss = viewModel::clearRelinkSearch
         )
     }
 }
@@ -308,7 +315,7 @@ fun TopBarSearchField(
         keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
         trailingIcon = {
             IconButton(onClick = { if (query.isNotEmpty()) onQueryChange("") else onClose() }) {
-                Icon(Icons.Default.Close, contentDescription = "Clear search")
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
             }
         },
         colors = TextFieldDefaults.colors(

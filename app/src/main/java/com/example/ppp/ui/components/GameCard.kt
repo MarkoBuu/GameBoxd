@@ -135,7 +135,7 @@ fun GameCard(
                         if (isCompleted && game.isFavorite) {
                             Icon(
                                 imageVector = Icons.Default.Favorite,
-                                contentDescription = "Favorite",
+                                contentDescription = stringResource(R.string.favorite_content_desc),
                                 tint = FavoritesRed,
                                 modifier = Modifier
                                     .size(20.dp)
@@ -183,7 +183,7 @@ fun GameCard(
                         RatingStars(rating = game.userRating)
                     } else {
                         Text(
-                            text = stringResource(R.string.rawg_rating_format, game.rawgRating),
+                            text = stringResource(R.string.igdb_rating_format, game.igdbRating),
                             fontSize = 12.sp,
                             color = TextSecondary
                         )
