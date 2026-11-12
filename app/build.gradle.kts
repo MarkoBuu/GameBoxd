@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.ppp"
+    namespace = "com.example.gameboxd"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.ppp"
+        applicationId = "com.example.gameboxd"
         minSdk = 24
         targetSdk = 35
         versionCode = 2

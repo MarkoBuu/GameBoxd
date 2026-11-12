@@ -35,7 +35,7 @@
 ## Project Structure
 
 ```text
-com.example.ppp/
+com.example.gameboxd/
 ├── data/
 │   ├── local/         # Room database entities, DAOs, and local helpers
 │   ├── model/         # Domain and data models (Game, Filters, Sort options)

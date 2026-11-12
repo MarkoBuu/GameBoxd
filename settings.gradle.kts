@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Ppp"
+rootProject.name = "GameBoxd"
 include(":app")
  
