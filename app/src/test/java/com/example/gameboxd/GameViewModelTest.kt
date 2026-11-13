@@ -54,6 +54,15 @@ class GameViewModelTest {
     }
 
     @Test
+    fun libraryShowsWishlistTab() = runTest(dispatcher) {
+        val vm = viewModel(FakeGameDao(listOf(savedGame(1, "Done"), savedGame(2, "Wished", PlayStatus.WISHLIST))))
+        backgroundScope.launch { vm.filteredLibraryGames.collect {} }
+
+        vm.setLibraryTab(PlayStatus.WISHLIST)
+        assertEquals(listOf("Wished"), vm.filteredLibraryGames.value.map { it.title })
+    }
+
+    @Test
     fun favoritesFilterNarrowsTheLibrary() = runTest(dispatcher) {
         val vm = viewModel(FakeGameDao(listOf(savedGame(1, "Plain"), savedGame(2, "Loved", favorite = true))))
         backgroundScope.launch { vm.filteredLibraryGames.collect {} }

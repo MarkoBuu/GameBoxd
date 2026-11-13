@@ -87,18 +87,21 @@ fun StatsScreen(
     var selectedStatsYear by remember { mutableStateOf<Int?>(null) }
     val yearOptions: List<Int?> = listOf<Int?>(null) + availableYears
 
-    val yearlyGames = if (selectedStatsYear == null) savedGames else savedGames.filter { it.completionYear == selectedStatsYear }
+    val yearlyGames =
+        if (selectedStatsYear == null) savedGames else savedGames.filter { it.completionYear == selectedStatsYear }
 
     val totalRated = yearlyGames.size
     val totalPlatinums =
         yearlyGames.count { it.hasPlatinum && it.playStatus == PlayStatus.COMPLETED }
     val totalFavorites = yearlyGames.count { it.isFavorite }
     val totalHours =
-        yearlyGames.filter { it.playStatus != PlayStatus.BACKLOG }.sumOf { it.playtimeHours }
+        yearlyGames.filter { it.playStatus != PlayStatus.BACKLOG && it.playStatus != PlayStatus.WISHLIST }
+            .sumOf { it.playtimeHours }
     val completedGames = yearlyGames.filter { it.playStatus == PlayStatus.COMPLETED }
     val droppedGames = yearlyGames.filter { it.playStatus == PlayStatus.DROPPED }
     val completedCount = completedGames.size
     val backlogCount = yearlyGames.count { it.playStatus == PlayStatus.BACKLOG }
+    val wishListCount = yearlyGames.count { it.playStatus == PlayStatus.WISHLIST }
     val droppedCount = droppedGames.size
 
     val attemptedCount = completedCount + droppedCount
@@ -155,7 +158,9 @@ fun StatsScreen(
                     showText = false,
                     options = yearOptions,
                     selected = selectedStatsYear,
-                    optionLabel = { yr -> yr?.let { "$it" } ?: stringResource(R.string.stats_all_time) },
+                    optionLabel = { yr ->
+                        yr?.let { "$it" } ?: stringResource(R.string.stats_all_time)
+                    },
                     onSelected = { selectedStatsYear = it }
                 )
             }
@@ -215,10 +220,20 @@ fun StatsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     StatusRow(label = stringResource(R.string.stat_total_games), count = totalRated)
-                    StatusRow(label = stringResource(R.string.status_completed), count = completedCount)
+                    StatusRow(
+                        label = stringResource(R.string.status_completed),
+                        count = completedCount
+                    )
                     StatusRow(label = stringResource(R.string.status_backlog), count = backlogCount)
+                    StatusRow(
+                        label = stringResource(R.string.status_wishlist),
+                        count = wishListCount
+                    )
                     StatusRow(label = stringResource(R.string.status_dropped), count = droppedCount)
-                    StatusRow(label = stringResource(R.string.stat_favorites), count = totalFavorites)
+                    StatusRow(
+                        label = stringResource(R.string.stat_favorites),
+                        count = totalFavorites
+                    )
                     completionRate?.let { rate ->
                         StatusTextRow(
                             label = stringResource(R.string.stat_completion_rate),

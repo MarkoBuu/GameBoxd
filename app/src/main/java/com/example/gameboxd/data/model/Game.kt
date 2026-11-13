@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 enum class PlayStatus(val displayName: String) {
     COMPLETED("Completed"),
     BACKLOG("Backlog"),
+    WISHLIST("Wishlist"),
     DROPPED("Dropped"),
     NONE("Not Saved");
 

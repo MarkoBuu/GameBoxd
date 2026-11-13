@@ -167,7 +167,9 @@ fun MainNavigation(
                 actions = {
                     if (!isSearchActive) {
                         if (isSearchable) {
-                            IconButton(onClick = { isSearchActive = true }) {
+                            IconButton(onClick = {
+                                isSearchActive = true
+                            }) {
                                 Icon(
                                     Icons.Default.Search,
                                     contentDescription = stringResource(R.string.cd_search),
@@ -175,7 +177,9 @@ fun MainNavigation(
                                 )
                             }
                         }
-                        IconButton(onClick = { viewModel.toggleTheme() }) {
+                        IconButton(onClick = {
+                            viewModel.toggleTheme()
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.DarkMode,
                                 contentDescription = stringResource(R.string.toggle_theme),

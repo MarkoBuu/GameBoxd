@@ -401,15 +401,15 @@ class GameViewModel(
         completionYear: Int? = game.completionYear
     ) {
         val isCompleted = status == PlayStatus.COMPLETED
-        val isBacklog = status == PlayStatus.BACKLOG
+        val isBacklogOrWishlist = status == PlayStatus.BACKLOG || status == PlayStatus.WISHLIST
 
         // Only COMPLETED games allow ratings, reviews, and favorites
         val effectiveRating = if (isCompleted) rating else 0f
         val effectivePlatinum = hasPlatinum && isCompleted
         val effectiveReview = if (isCompleted) review else ""
         val effectiveFavorite = isFavorite && isCompleted
-        val effectiveHours = if (isBacklog) 0 else playtimeHours
-        val effectiveYear = if (isBacklog) null else completionYear
+        val effectiveHours = if (isBacklogOrWishlist) 0 else playtimeHours
+        val effectiveYear = if (isBacklogOrWishlist) null else completionYear
 
         closeRatingDialog()
         viewModelScope.launch {

@@ -14,7 +14,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -172,7 +171,6 @@ private fun FixMatchDialog(
 }
 
 @SuppressLint("DefaultLocale")
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GameDetailDialog(
     game: Game,
@@ -185,6 +183,7 @@ fun GameDetailDialog(
     onRelinkSelect: (target: Game, onResult: (Boolean) -> Unit) -> Unit = { _, _ -> },
     onRelinkDismiss: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val isAlreadySaved = game.playStatus != PlayStatus.NONE
 
@@ -209,7 +208,7 @@ fun GameDetailDialog(
     var showFixMatchDialog by remember { mutableStateOf(false) }
 
     val platinumEnabled = selectedStatus == PlayStatus.COMPLETED
-    val detailsEnabled = selectedStatus != PlayStatus.BACKLOG
+    val detailsEnabled = selectedStatus != PlayStatus.BACKLOG && selectedStatus != PlayStatus.WISHLIST
     // Ratings, reviews, and favorites are allowed ONLY for COMPLETED games
     val isCompleted = selectedStatus == PlayStatus.COMPLETED
 
@@ -243,9 +242,9 @@ fun GameDetailDialog(
     val statusOptions = listOf(
         PlayStatus.COMPLETED,
         PlayStatus.BACKLOG,
+        PlayStatus.WISHLIST,
         PlayStatus.DROPPED
     )
-    val context = LocalContext.current
 
     val toastSavedText = stringResource(R.string.toast_saved)
     val toastUpdatedText = stringResource(R.string.toast_updated)
@@ -390,7 +389,9 @@ fun GameDetailDialog(
                         // Favorites Heart Toggle - Only for Completed Games!
                         if (isCompleted) {
                             IconButton(
-                                onClick = { isFavorite = !isFavorite },
+                                onClick = {
+                                    isFavorite = !isFavorite
+                                },
                                 modifier = Modifier
                                     .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                     .size(36.dp)
@@ -410,7 +411,9 @@ fun GameDetailDialog(
                             // Share Review Card Image Button - Available ONLY if in library and COMPLETED!
                             if (canShareReview) {
                                 IconButton(
-                                    onClick = { performShare() },
+                                    onClick = {
+                                        performShare()
+                                    },
                                     modifier = Modifier
                                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                         .size(36.dp)
@@ -517,7 +520,9 @@ fun GameDetailDialog(
                             val isSelected = selectedStatus == status
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { selectedStatus = status },
+                                onClick = {
+                                    selectedStatus = status
+                                },
                                 label = {
                                     Text(
                                         text = status.displayName,
@@ -588,7 +593,9 @@ fun GameDetailDialog(
                         Box(modifier = Modifier.padding(bottom = 12.dp)) {
                             FilterChip(
                                 selected = effectivePlatinum,
-                                onClick = { hasPlatinum = !hasPlatinum },
+                                onClick = {
+                                    hasPlatinum = !hasPlatinum
+                                },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.EmojiEvents,

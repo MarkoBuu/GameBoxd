@@ -15,6 +15,7 @@
     <!-- Status Tabs -->
     <string name="status_completed">Completed</string>
     <string name="status_backlog">Backlog</string>
+    <string name="status_wishlist">Wishlist</string>
     <string name="status_dropped">Dropped</string>
     <string name="status_not_saved">Not Saved</string>
 

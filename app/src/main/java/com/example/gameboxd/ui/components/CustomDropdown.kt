@@ -25,6 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,7 +55,12 @@ fun <T> CustomDropdown(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable { expanded = true }
+                .clickable {
+                    expanded = true
+                }
+                .semantics {
+                    role = Role.DropdownList
+                }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

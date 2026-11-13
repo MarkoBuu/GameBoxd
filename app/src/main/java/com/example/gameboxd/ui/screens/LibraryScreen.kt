@@ -104,6 +104,7 @@ fun LibraryScreen(
     val tabs = listOf(
         PlayStatus.COMPLETED,
         PlayStatus.BACKLOG,
+        PlayStatus.WISHLIST,
         PlayStatus.DROPPED
     )
 
@@ -194,7 +195,7 @@ fun LibraryScreen(
 
             // Compact Bar: Filter Box + SortDropdown
             item {
-                AnimatedVisibility(selectedTab != PlayStatus.BACKLOG && filteredGames.isNotEmpty()) {
+                AnimatedVisibility(selectedTab != PlayStatus.BACKLOG && selectedTab != PlayStatus.WISHLIST && filteredGames.isNotEmpty()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -16,7 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.gameboxd.R
@@ -30,7 +35,12 @@ fun RatingStars(
     interactive: Boolean = false,
     onRatingChanged: ((Float) -> Unit)? = null
 ) {
-    Row {
+    Row(
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = "Rating: $rating out of $maxStars stars"
+            if (interactive) role = Role.Button
+        }
+    ) {
         for (i in 1..maxStars) {
             val starValue = i.toFloat()
             val icon = when {
