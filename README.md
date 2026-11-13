@@ -10,6 +10,7 @@
 - **Personal Game Library**: Organize your collection into various lists:
   - Completed
   - Backlog
+  - Wishlist
   - Dropped 
 - **Detailed Game Views**: View high-resolution cover art, screenshots, release dates, genres, developer info, summaries, and community/critic ratings.
 - **Logging & Reviews**: Log your gameplay sessions, record personal ratings (with star ratings), write reviews, and track play status.
@@ -42,7 +43,7 @@ com.example.gameboxd/
 ├── di/                # Koin dependency injection modules
 └── ui/
     ├── components/    # Reusable Compose components (GameCards, RatingStars, etc.)
-    ├── navigation/    # Navigation graph and screen routes
+    ├── navigation/    # Nav3 setup
     ├── screens/       # Main app screens (Explore, Library, Stats, Detail Dialog)
     ├── theme/         # Material 3 theme, colors, and typography
     └── utils/         # Utilities (Review card generator, helpers)
