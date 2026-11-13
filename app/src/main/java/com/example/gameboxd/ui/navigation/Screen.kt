@@ -1,14 +1,22 @@
 package com.example.gameboxd.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) : NavKey {
-    object Explore : Screen("explore", "Explore", Icons.Default.Explore)
-    object Library : Screen("library", "Library", Icons.Default.VideogameAsset)
-    object Stats : Screen("stats", "Stats", Icons.Default.BarChart)
+sealed interface MainScreens : NavKey {
+    @Serializable
+    data object Explore : MainScreens
+
+    @Serializable
+    data object Library: MainScreens
+
+    @Serializable
+    data object  Stats : MainScreens
 }
+
+data class TabInfo(
+    val route: MainScreens,
+    val title: String,
+    val icon: ImageVector
+)

@@ -11,9 +11,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,11 +49,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.ui.NavDisplay
 import com.example.gameboxd.R
 import com.example.gameboxd.ui.components.ServerStatusBanner
 import com.example.gameboxd.ui.screens.ExploreScreen
@@ -67,9 +67,12 @@ import kotlinx.coroutines.launch
 fun MainNavigation(
     viewModel: GameViewModel
 ) {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val navigationState = rememberNavigationState(
+        startRoute = MainScreens.Explore,
+        topLevelRoutes = setOf(MainScreens.Explore, MainScreens.Library, MainScreens.Stats)
+    )
+    val navigator = remember { Navigator(navigationState) }
+    val currentRoute = navigationState.topLevelRoute
 
     val selectedGameForRating by viewModel.selectedGameForRating.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
@@ -82,38 +85,37 @@ fun MainNavigation(
     val statsListState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
-    val screens = listOf(
-        Screen.Explore,
-        Screen.Library,
-        Screen.Stats
+    val tabs = listOf(
+        TabInfo(MainScreens.Explore, "Explore", Icons.Default.Explore),
+        TabInfo(MainScreens.Library, "Library", Icons.Default.VideogameAsset),
+        TabInfo(MainScreens.Stats, "Stats", Icons.Default.BarChart)
     )
+
     val barColor = MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
-    val isSearchable = currentRoute == Screen.Explore.route || currentRoute == Screen.Library.route
+    val isSearchable = currentRoute == MainScreens.Explore || currentRoute == MainScreens.Library
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
 
-// Replace these with your real ViewModel members
     val exploreQuery by viewModel.searchQuery.collectAsState()
     val libraryQuery by viewModel.librarySearchQuery.collectAsState()
 
     fun closeSearch() {
         isSearchActive = false
         when (currentRoute) {
-            Screen.Explore.route -> viewModel.onSearchQueryChanged("")
-            Screen.Library.route -> viewModel.onLibrarySearchChanged("")
+            MainScreens.Explore -> viewModel.onSearchQueryChanged("")
+            MainScreens.Library -> viewModel.onLibrarySearchChanged("")
         }
     }
 
-// Switching tabs closes the search bar and clears the query of the tab you left
     var lastRoute by remember { mutableStateOf(currentRoute) }
     LaunchedEffect(currentRoute) {
         if (lastRoute != currentRoute) {
             isSearchActive = false
             when (lastRoute) {
-                Screen.Explore.route -> {
+                MainScreens.Explore -> {
                     viewModel.onSearchQueryChanged("")
                     viewModel.dismissServiceStatus()
                 }
-                Screen.Library.route -> viewModel.onLibrarySearchChanged("")
+                MainScreens.Library -> viewModel.onLibrarySearchChanged("")
             }
             lastRoute = currentRoute
         }
@@ -145,14 +147,14 @@ fun MainNavigation(
                 },
                 title = {
                     if (isSearchActive) {
-                        if (currentRoute == Screen.Explore.route) {
+                        if (currentRoute == MainScreens.Explore) {
                             TopBarSearchField(
                                 query = exploreQuery,
                                 placeholder = stringResource(R.string.search_placeholder_explore),
                                 onQueryChange = viewModel::onSearchQueryChanged,
                                 onClose = ::closeSearch
                             )
-                        } else if (currentRoute == Screen.Library.route) {
+                        } else if (currentRoute == MainScreens.Library) {
                             TopBarSearchField(
                                 query = libraryQuery,
                                 placeholder = stringResource(R.string.search_placeholder_library),
@@ -194,36 +196,30 @@ fun MainNavigation(
             NavigationBar(
                 containerColor = barColor,
             ) {
-                screens.forEach { screen ->
-                    val isSelected = currentRoute == screen.route
+                tabs.forEach { tab ->
+                    val isSelected = currentRoute == tab.route
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            navigator.navigate(tab.route)
                             scope.launch {
-                                when (screen) {
-                                    Screen.Explore -> exploreListState.scrollToItem(0)
-                                    Screen.Library -> libraryListState.scrollToItem(0)
-                                    Screen.Stats -> statsListState.scrollTo(0)
+                                when (tab.route) {
+                                    MainScreens.Explore -> exploreListState.scrollToItem(0)
+                                    MainScreens.Library -> libraryListState.scrollToItem(0)
+                                    MainScreens.Stats -> statsListState.scrollTo(0)
                                 }
                             }
                         },
                         icon = {
                             Icon(
-                                imageVector = screen.icon,
-                                contentDescription = screen.title,
+                                imageVector = tab.icon,
+                                contentDescription = tab.title,
                                 tint = if (isSelected) PlayStationLightBlue else TextSecondary
                             )
                         },
                         label = {
                             Text(
-                                text = screen.title,
+                                text = tab.title,
                                 color = if (isSelected) PlayStationLightBlue else TextSecondary
                             )
                         },
@@ -246,30 +242,37 @@ fun MainNavigation(
                     onDismiss = { viewModel.dismissServiceStatus() }
                 )
             }
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Explore.route,
-                modifier = Modifier.weight(1f)
-            ) {
-                composable(Screen.Explore.route) {
-                    ExploreScreen(
-                        viewModel = viewModel,
-                        listState = exploreListState
-                    )
-                }
-                composable(Screen.Library.route) {
-                    LibraryScreen(
-                        viewModel = viewModel,
-                        listState = libraryListState
-                    )
-                }
-                composable(Screen.Stats.route) {
-                    StatsScreen(
-                        viewModel = viewModel,
-                        scrollState = statsListState
-                    )
+            val entries = navigationState.toEntries { key ->
+                when (key) {
+                    MainScreens.Explore -> NavEntry(key) {
+                        ExploreScreen(
+                            viewModel = viewModel,
+                            listState = exploreListState
+                        )
+                    }
+                    MainScreens.Library -> NavEntry(key) {
+                        LibraryScreen(
+                            viewModel = viewModel,
+                            listState = libraryListState
+                        )
+                    }
+                    MainScreens.Stats -> NavEntry(key) {
+                        StatsScreen(
+                            viewModel = viewModel,
+                            scrollState = statsListState
+                        )
+                    }
+                    else -> NavEntry(key) {
+                        Text("Unknown route")
+                    }
                 }
             }
+
+            NavDisplay(
+                entries = entries,
+                onBack = { navigator.goBack() },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
     selectedGameForRating?.let { game ->
@@ -290,7 +293,6 @@ fun MainNavigation(
         )
     }
 }
-
 
 @Composable
 fun TopBarSearchField(
